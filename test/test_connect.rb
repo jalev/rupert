@@ -3,7 +3,7 @@ require 'rupert'
 
 class Rupert::TestConnect < Test::Unit::TestCase
   def setup 
-    uri = ""
+    uri = "qemu+ssh://root@rupert.provisioning.io/system"
     @connection = Rupert::Connect.new uri 
   end
 
@@ -12,7 +12,7 @@ class Rupert::TestConnect < Test::Unit::TestCase
   end
 
   def test_should_close
-    @connection.disconnect_from_hypervisor
+    @connection.disconnect
     assert @connection.closed?
   end
 
