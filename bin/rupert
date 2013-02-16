@@ -1,0 +1,4 @@
+#!/usr/bin/env ruby
+require 'rupert'
+
+#TODO - Add CLI support
