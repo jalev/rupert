@@ -6,13 +6,17 @@ module Rupert
 
     attr_reader :connection
 
+    # Notes: Storage Pools are pieces of storage that can be accessed via
+    # external machines
+    #
+
     # Create pool
     # List available pools
 
-    def initialize name 
+    def initialize options = {} 
 
       @connection = Virt.active_connection
-      @pool = @connection.lookup_storage_pool_by_name(name)
+      @pool = @connection.lookup_storage_pool_by_name(options[:name])
       @pool
 
     end

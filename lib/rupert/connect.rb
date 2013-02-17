@@ -8,8 +8,8 @@ module Rupert
     # During the initialization of the class, we call the Libvirt library to
     # open up a connection to the hypervisor.
     #
-    def initialize( uri )
-      @connection = Libvirt::open( uri )
+    def initialize options = {}
+      @connection = Libvirt::open( options[:uri] )
     end
 
     # Terminate an active connection.
