@@ -1,4 +1,11 @@
 #!/usr/bin/env ruby
 require 'rupert'
 
-#TODO - Add CLI support
+# TODO - Add CLI support
+# CLI command ideas:
+#   - rupert create <archtype?> with --10gb storage --1nic --kickstart here
+#   --bla bla bla 
+#   - rupert add <NIC/Pool>
+#   - rupert modify <vm> add/remove <something>
+#   - rupert shutdown <vm>
+#   - rupert delete <vm/network/pool>

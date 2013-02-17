@@ -17,6 +17,12 @@ module Rupert
       @connection = Rupert.active_connection.connection
     end 
 
+    # Returns the name of the hypervisor
+    #
+    def name
+      connection.hostname
+    end
+
     # Lists all defined guests on our host.
     #
     def list_guests

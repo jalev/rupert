@@ -6,4 +6,6 @@ module Rupert
   # TODO Network Interfaces
   # TODO Storage Pool Creation
 
+  # TODO Howto read ruby templates
+  # TODO Howto write XML docs
 end
