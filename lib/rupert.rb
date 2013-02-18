@@ -1,6 +1,9 @@
 require 'rupert/rupert'
 require 'rupert/connect'
 require 'rupert/host'
+require 'rupert/pool'
+require 'rupert/volume'
+require 'rupert/utility'
 
 module Rupert
 
