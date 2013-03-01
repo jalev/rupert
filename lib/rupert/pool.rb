@@ -3,8 +3,8 @@ require 'libvirt'
 module Rupert
 
   class Pool
-
-    attr_reader :connection, :name, :path
+    include Rupert::Utility
+    attr_reader :connection, :name, :path, :pool_path_loc, :template_path, :pool
 
     # Notes: Storage Pools are pieces of storage that can be accessed via
     # external machines
@@ -15,37 +15,38 @@ module Rupert
 
     def initialize options = {} 
 
-      @connection = Virt.active_connection
-      @pool = @connection.lookup_storage_pool_by_name(options[:name])
+      @connection = Rupert.active_connection.connection
+      # Performs a boolean operation on the variable. If nil/false, we raise
+      # an error
+      @name = options[:name] || raise("must provide a name!")
       @path = options[:path]
-      # Trinary operation: If true, we use the default size, else we use the
-      # size given.
-      #
-      @size = options[:size].nil? ? default_size : options[:size]
-      @alloc_size = options[:allocation_size].nil? ? default_alloc_size : options[:allocation_size]
+      @template_path = options[:type] || default_template_type
     end
 
     # Create a storage pool 
     # we need to define an xml 
     #
-    def create_pool name 
-      connection.define_storage_pool_xml name   
+    def save 
+      raise("must provide a filestore path") if path.nil?
+      raise("pool with this name already exists") if pool_exist? 
+      connection.define_storage_pool_xml(xml_template)
+      fetch_pool
     end
 
-    # For the moment we will use a simple file storage system
-    #
-    def file_pool
-      pool_type = file_storage
-      ERB.new (template_loc, nil, '-').result(binding)
+    def start
+      @pool.start
     end
 
-
-    def default_size 
-      0
+    def build
+      @pool.build
     end
 
-    def default_allocation_size
-      0
+    def destroy
+      @pool.destroy
+    end
+
+    def undefine
+      @pool.undefine
     end
 
     # Gets the default storage pool. By default, this is always 'default' on
@@ -55,9 +56,22 @@ module Rupert
       pool = connection.list_storage_pools.first
     end
 
-    # Read a template from our current location upwards
-    def template_loc
-      File.read("#{File.dirname(__FILE__}/../../templates/pools/#{pool_type}")
+    def default_template_type
+      "pools/file_storage.xml.erb"
+    end
+
+    # Returns true if a pool exists, false otherwise.
+    #
+    def pool_exist?
+      !fetch_pool.nil?
+    end
+
+    def fetch_pool
+      begin
+       connection.lookup_storage_pool_by_name(name)
+      rescue Libvirt::RetrieveError
+        nil
+      end
     end
 
   end

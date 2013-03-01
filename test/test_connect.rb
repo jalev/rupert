@@ -4,7 +4,7 @@ require 'rupert'
 class Rupert::TestConnect < Test::Unit::TestCase
   def setup 
     uri = "qemu+ssh://root@rupert.provisioning.io/system"
-    @connection = Rupert::Connect.new uri 
+    @connection = Rupert::open(uri)
   end
 
   def test_should_connect

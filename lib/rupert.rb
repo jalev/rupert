@@ -1,9 +1,9 @@
 require 'rupert/rupert'
+require 'rupert/utility'
 require 'rupert/connect'
 require 'rupert/host'
 require 'rupert/pool'
 require 'rupert/volume'
-require 'rupert/utility'
 
 module Rupert
 
@@ -16,7 +16,7 @@ module Rupert
     end
 
     def open uri
-      @connection = Rupert::Connect.new uri
+      @connection = Rupert::Connect.new(uri)
     end 
 
   end

@@ -3,7 +3,9 @@ require 'erb'
 module Rupert
   module Utility
 
-    # Read a template directly from one of our template stores
+    # Read a template directly from one of our template stores. We need to go
+    # two levels down since the 'current directory' will always be the lib
+    # directory.
     #
     def template
       File.read("#{File.dirname __FILE__}/../../templates/#{template_path}")
@@ -13,6 +15,6 @@ module Rupert
     #
     def xml_template
       ERB.new(template, nil, '-').result(binding)
-    end
-
+   end
+  end
 end
