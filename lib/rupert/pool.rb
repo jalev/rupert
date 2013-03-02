@@ -34,26 +34,19 @@ module Rupert
     end
 
     def start
-      @pool.start
+      pool.start
     end
 
     def build
-      @pool.build
+      pool.build
     end
 
     def destroy
-      @pool.destroy
+      pool.destroy
     end
 
     def undefine
-      @pool.undefine
-    end
-
-    # Gets the default storage pool. By default, this is always 'default' on
-    # most systems.
-    #
-    def fetch_default_pool
-      pool = connection.list_storage_pools.first
+      pool.undefine
     end
 
     def default_template_type

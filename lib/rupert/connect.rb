@@ -3,13 +3,21 @@ require 'libvirt'
 module Rupert
   class Connect
     
-    attr_reader :connection
+    attr_reader :connection, :raw
 
     # During the initialization of the class, we call the Libvirt library to
     # open up a connection to the hypervisor.
     #
     def initialize uri, options = {}
       @connection = Libvirt::open(uri)
+      @raw = @connection
+    end
+
+    # Returns the underlaying Libvirt connection for when we're really, really
+    # lazy.
+    #
+    def raw
+      return @raw
     end
 
     # Terminate an active connection.
