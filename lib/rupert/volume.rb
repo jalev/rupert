@@ -6,8 +6,10 @@ module Rupert
     include Rupert::Utility
 
     # TODO allow the specification of alternate volume sizes
+    # TODO cloning
+    # TODO wiping
 
-    attr_reader :name, :pool, :size, :allocation, :volume_path
+    attr_accessor :name, :pool, :capacity, :allocation, :volume_path, :format, :path
 
     # A volume can be created by passing in some options. A volume must be
     # attached to a Pool before creation.
@@ -15,8 +17,9 @@ module Rupert
     # * +:name+ - The name of the volume to be created
     # * +:pool+ - The name of the pool that this volume will be created on.
     # This defaults to 'default'.
-    # * +:size+  - The size of the volume. Defaults to 10GB.
-    # * +:allocation+ - The amount of space allocated
+    # * +:capacity+  - Capacity of the volume. Defaults to 5GB.
+    # * +:allocation+ - The amount of space allocated. Defaults to 0. This
+    # creates a 'sparse disk' by default.
     #
     # == Examples
     #     # Create a new volume called 'test_volume' with a size of 20gb
@@ -26,12 +29,14 @@ module Rupert
       @connection = Rupert.connection
       @name = options[:name] || raise("Volume needs a name")
       @pool = options[:pool] || default_pool_name
-      @size = options[:size] || default_volume_size
-      @allocated_size = options[:allocation] || size
+      @format = options[:format] || default_volume_format
+      @allocation = options[:allocation] || default_allocation_size
+      @capacity = options[:capacity] || default_capacity_size
     end
 
+    # Saves the volune. We also want the path of the newly created volume.
     def save
-      volume_path = create_volume(xml_template).path
+      self.path = create_volume(xml_template).path
     end
 
     def destroy
@@ -49,6 +54,9 @@ module Rupert
       storage_pool.create_vol_xml(xml)
     end
 
+    # A raw connection to a pool. Inherits the name of the pool from
+    # initialization. 
+    #
     def storage_pool 
       @connection.raw.lookup_storage_pool_by_name(pool)
     end
@@ -65,8 +73,16 @@ module Rupert
       "default"
     end
 
-    def default_volume_size
-      10
+    def default_allocation_size
+      0 
+    end
+
+    def default_capacity_size
+      5
+    end
+
+    def default_volume_format
+      "raw"
     end
 
   end
