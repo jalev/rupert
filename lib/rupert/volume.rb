@@ -44,6 +44,7 @@ module Rupert
       new?
     end
 
+    # Returns true if the volume doesn't exist
     def new?
       find_volume(name).nil?
     end

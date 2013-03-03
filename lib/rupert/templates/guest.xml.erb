@@ -1,11 +1,11 @@
 <domain type='<%= domain_type %>'>
   <name><%= name %></name>
-  <memory><%= ram %></memory>
-  <vcpu><%= vcpus %></vcpu>
+  <memory unit="MB"><%= ram %></memory>
+  <vcpu><%= vcpu %></vcpu>
   <os>
-    <type arch='<%= arch %>'>hvm</type>
-    <% if cmd_args -%>
-      <cmdline><%= cmd_args %></cmdline>
+    <type arch='<%= arch %>'><%= os_type%></type>
+    <% if cmdargs -%>
+      <cmdline><%= cmdargs %></cmdline>
     <% end -%>
     <boot dev='hd'/>
   </os>
@@ -22,7 +22,8 @@
   <% if iso_file -%>
     <disk type='file' device='cdrom'>
       <driver name='qemu' type='raw'/>
-      <source file='<%= "#{iso_dir}/#{iso_file}" %>'/>
+      <source file='<%= iso_file %>'/>
+      <target dev='hdc' bus='ide' />
       <readonly/>
       <address type='drive' controller='0' bus='1' unit='0'/>
     </disk>
@@ -43,13 +44,9 @@
       <target type='serial' port='0'/>
     </console>
     <input type='mouse' bus='ps2'/>
-    <graphics type='vnc' port='-1' autoport='yes'/>
+    <graphics type='<%= display_type %>' port='<%= display_port %>' autoport='yes'/>
     <video>
       <model type='cirrus' vram='9216' heads='1'/>
-      <address type='pci' domain='0x0000' bus='0x00' slot='0x02' function='0x0'/>
     </video>
-    <memballoon model='virtio'>
-      <address type='pci' domain='0x0000' bus='0x00' slot='0x05' function='0x0'/>
-    </memballoon>
   </devices>
 </domain>
