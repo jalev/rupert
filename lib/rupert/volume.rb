@@ -61,6 +61,7 @@ module Rupert
     # a volume is by default a subset of a pool.
     #
     def save
+      raise("test") unless new?
       pool.create_volume(self)
     end
 
@@ -83,7 +84,7 @@ module Rupert
     def find_volume name
       #todo redo this for redone pool interfacing
       begin
-        return @pool.lookup_volume_by_name(name)
+        return @pool.find_volume_by_name(name)
       rescue Libvirt::RetrieveError
       end
     end

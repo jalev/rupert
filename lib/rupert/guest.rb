@@ -116,6 +116,11 @@ module Rupert
     def destroy
       @guest.force_shutdown if running?
       @guest.undefine
+      !new?
+    end
+
+    def new?
+      @guest.nil?
     end
 
     private
@@ -175,7 +180,7 @@ module Rupert
 
     # The default path of the template which we use to create guests. 
     def default_template_path
-      "templates/guest.xml.erb"
+      "guest.xml.erb"
     end
 
   end
