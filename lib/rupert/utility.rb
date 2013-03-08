@@ -13,7 +13,7 @@ module Rupert
     # We first fetch the xml of an libvirt object by calling its xml_desc
     # method.
     #
-    def value_from_xml tree, attribute
+    def value_from_xml tree, attribute=nil
       xml = REXML::Document.new(@xml_desc)
       # if we didn't provide an attribute, assume that we want a specific
       # value from a tree, otherwise provide the attributes of an entire tree.
