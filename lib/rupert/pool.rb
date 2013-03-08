@@ -4,23 +4,42 @@ module Rupert
 
   class Pool
     include Rupert::Utility
-    attr_reader :connection, :name, :path, :pool_path_loc, :template_path, :pool
 
-    # Notes: Storage Pools are pieces of storage that can be accessed via
-    # external machines
+    # The physical connection to the libvirt daemon
+    attr_reader :connection
+
+    # The name of the pool.
+    attr_reader :name
+
+    # The path of the pool.
+    attr_reader :path
+
+    # The physical libvirt pool object
+    attr_reader :pool
+
+    # The XML dump of a given pool given to us by the libvirt daemon.
+    attr_reader :xml_desc
+
+
+    # A storage space for providing CRUD methods relating to volumes and
+    # physical storage.
     #
-
-    # Create pool
-    # List available pools
-
+    # == Attributes ==
+    #
+    # === Required ===
+    # * +:name+ - The name of the pool. This is *required*
+    #
+    # === Optional ===
+    # * +:path+ - The path of the pool. Used for creating storage pools.
+    #
     def initialize options = {} 
 
-      @connection = Rupert.active_connection.connection
+      @connection = Rupert.connection.raw
       # Performs a boolean operation on the variable. If nil/false, we raise
       # an error
       @name = options[:name] || raise("must provide a name!")
       @path = options[:path]
-      @template_path = options[:type] || default_template_type
+      get_pool
     end
 
     # Create a storage pool 
@@ -30,7 +49,7 @@ module Rupert
       raise("must provide a filestore path") if path.nil?
       raise("pool with this name already exists") if pool_exist? 
       connection.define_storage_pool_xml(xml_template)
-      fetch_pool
+      get_pool
     end
 
     def start
@@ -49,21 +68,27 @@ module Rupert
       pool.undefine
     end
 
-    def default_template_type
-      "pools/file_storage.xml.erb"
+    def create_volume volume_object
+      pool.create_volume_from_xml volume_object.xml_template
     end
 
     # Returns true if a pool exists, false otherwise.
     #
     def pool_exist?
-      !fetch_pool.nil?
+      !get_pool.nil?
     end
 
-    def fetch_pool
-      begin
-       connection.lookup_storage_pool_by_name(name)
-      rescue Libvirt::RetrieveError
-        nil
+    # Return the path of the storage pool
+    def path
+      value_from_xml("pool/target/path") 
+    end
+
+    # Fetches a pool object by name. This will either return nothing (which
+    # means we should create a new pool), or return a Libvirt pool object, and
+    # dump its xml contents. 
+    def get_pool
+      if @pool = connection.lookup_storage_pool_by_name(name)
+        @xml_desc = @pool.xml_desc
       end
     end
 

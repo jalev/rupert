@@ -9,11 +9,17 @@ module Rupert
   class Guest
     include Rupert::Utility
 
-    #TODO implement proper error handling
-    
     attr_accessor :volume, :ram, :vcpu, :iso_file, :os_type, :cmdargs, :pool, :size, :guest, :name, :domain_type, :arch
     attr_accessor :display_type, :display_port
-    attr_accessor :volume_format, :volume_capacity, :volume_allocation
+    #attr_accessor :volume_format, :volume_capacity, :volume_allocation, :volume_name
+
+    #:stopdoc:
+    # TODO - Implementation of guest finding
+    # TODO - Implementation of guest starting
+    # TODO - Implementation of guest stopping
+    # TODO - Implementation of guest destroying
+    #
+    #:startdoc:
 
     # A Guest (or virtual machine, depending on who you ask) can be created by
     # inputting some options.
@@ -21,9 +27,10 @@ module Rupert
     # == Arguments
     #
     # * +:name+ - The name of the volume to be created
+    #
+    # === Guest Creation
     # * +:vcpu+ - The amount of VCPUs to attach to the guest. Defaults to 1.
     # * +:ram+  - The amount of RAM to attach to the guest. Defaults to 512mb.
-    # * +:size+ - The size of the guest. Defaults to 10GB.
     # * +:iso_file+  - The location of the ISO of which to install the Guest from.
     # * +:os_type+  - The type of Guest to install. Defaults to HVM (Hardware
     # Virtual-Machine).
@@ -34,6 +41,16 @@ module Rupert
     # creation.
     # * +:pool+ - The pool where the volume will be created, if it wasn't
     # already specified.
+    # * +:display_type+ - The type of display that will be used for this
+    # guest. Defaults to VNC.
+    # * +:display_port+ - The port that the display will be available on.
+    # Defaults to -1, which is an automatically assigned number by the Libvirt
+    # daemon.
+    #
+    # === Volume Creation
+    # * +:volume_format+  - The format of the volume for the guest.
+    # * +:volume_capacity+  - The capacity of the volume
+    # * +:volume_allocation+  - The allocation size of the volume
     #
     # == Examples
     #     
@@ -43,6 +60,7 @@ module Rupert
     #
     def initialize options={}
       @connection = Rupert.connection
+      @volume = Volume.new(options)
       @name = options[:name] || raise("name is required!")
       @vcpu = options[:vcpu] || default_vcpu
       @ram = options[:ram] || default_ram
@@ -57,28 +75,60 @@ module Rupert
     end
 
     def save
-      if @volume.nil?
-        create_volume
-      end
+      #create_volume
       @guest = @connection.raw.define_domain_xml(xml_template)
     end
 
+    def running?
+      @guest.active?
+    end
+
+    def start
+      @guest.create if !running?
+      running?
+    end
+
+    def restart
+      @guest.restart if !running?
+    end
+
+    def suspend
+      @guest.suspend
+      !running?
+    end
+
+    def resume
+      @guest.resume
+      running?
+    end
+
+    def shutdown
+      @guest.shutdown
+      !running?
+    end
+
+    def force_shutdown
+      @guest.destroy if running?
+    end
+
     def destroy
-      if @guest.nil?
-      end
+      @guest.force_shutdown if running?
+      @guest.undefine
     end
 
     private
 
     def create_volume
       options = {}
-      options[:name] = name
+      options[:name] = volume_name || name
       options[:pool] = pool || default_pool
       options[:format] = volume_format 
       options[:allocation] = volume_allocation
       options[:capacity] = volume_capacity
-      @volume = Rupert::Volume.new(options)
-      @volume.save
+    end
+
+    def find_guest_by_name
+      @guest = @connection.raw.lookup_domain_by_name(name)
     end
 
     def default_pool

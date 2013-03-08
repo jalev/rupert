@@ -10,11 +10,7 @@ module Rupert
     attr_reader :connection
 
     def initialize
-      # We need to get the active connection. We do this by fetching the
-      # Connect Class's 'connection' variable, which is available to us
-      # through the getter 'attr_reader'
-      #
-      @connection = Rupert.active_connection.connection
+      @connection = Rupert.connection.raw
     end 
 
     # Returns the name of the hypervisor
@@ -61,6 +57,14 @@ module Rupert
 
     def list_networks
       connection.list_networks
+    end
+
+    def lookup_pool name
+      connection.lookup_storage_pool_by_name name
+    end
+
+    def create_pool options
+      Rupert::Pool.new(options)
     end
 
   end

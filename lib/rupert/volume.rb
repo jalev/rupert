@@ -9,7 +9,25 @@ module Rupert
     # TODO cloning
     # TODO wiping
 
-    attr_accessor :name, :pool, :capacity, :allocation, :volume_path, :format, :path
+    # The name of the volume.
+    attr_accessor :name 
+    
+    # The name of the pool that the volume belongs to, or should be created
+    # on.
+    attr_accessor :pool
+    
+    # The size of the volume.
+    attr_accessor :capacity 
+    
+    # How much of the volume should be allocated. If not specified, then a
+    # sparse file is created instead.
+    attr_accessor :allocation 
+    
+    # The format of the volume. 
+    attr_accessor :format 
+
+    # The path of the volume.
+    attr_accessor :path
 
     # A volume can be created by passing in some options. A volume must be
     # attached to a Pool before creation.
@@ -28,15 +46,18 @@ module Rupert
     def initialize options = {}
       @connection = Rupert.connection
       @name = options[:name] || raise("Volume needs a name")
-      @pool = options[:pool] || default_pool_name
+      @pool = options[:pool].nil? default_pool : @connection.host.lookup_pool(options[:pool]) 
       @format = options[:format] || default_volume_format
       @allocation = options[:allocation] || default_allocation_size
       @capacity = options[:capacity] || default_capacity_size
     end
 
-    # Saves the volune. We also want the path of the newly created volume.
+    # Passes the volume object to a method in pool which defines the actual
+    # volume. We do not want to modify a volume outside of a pool object since
+    # a volume is by default a subset of a pool.
+    #
     def save
-      self.path = create_volume(xml_template).path
+      pool.create_volume(self)
     end
 
     def destroy
@@ -49,29 +70,23 @@ module Rupert
       find_volume(name).nil?
     end
 
+    def path
+      "#{pool.path}/#{name}"
+    end
+
     private
 
-    def create_volume xml
-      storage_pool.create_vol_xml(xml)
-    end
-
-    # A raw connection to a pool. Inherits the name of the pool from
-    # initialization. 
-    #
-    def storage_pool 
-      @connection.raw.lookup_storage_pool_by_name(pool)
-    end
-
     def find_volume name
+      #todo redo this for redone pool interfacing
       begin
         return storage_pool.lookup_volume_by_name(name)
       rescue Libvirt::RetrieveError
       end
     end
 
-    # Default pool name always defaults to 'default'
-    def default_pool_name 
-      "default"
+    # Fetch the first pool.
+    def default_pool
+      @connection.host.list_storage_pools.first
     end
 
     def default_allocation_size
