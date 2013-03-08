@@ -46,7 +46,7 @@ module Rupert
     def initialize options = {}
       @connection = Rupert.connection
       @name = options[:name] || raise("Volume needs a name")
-      @pool = options[:pool].nil? default_pool : @connection.host.lookup_pool(options[:pool]) 
+      @pool = options[:pool].nil? ? default_pool : @connection.host.lookup_pool(options[:pool]) 
       @format = options[:format] || default_volume_format
       @allocation = options[:allocation] || default_allocation_size
       @capacity = options[:capacity] || default_capacity_size
