@@ -46,7 +46,9 @@ module Rupert
     # Lists all available storage-pools on the host.
     #
     def list_pools
-      connection.list_storage_pools
+      connection.list_storage_pools.map do | pool |
+        create_pool({:name => pool})
+      end
     end
 
     # Lists all inactive storage-pools on the host.
@@ -60,7 +62,10 @@ module Rupert
     end
 
     def lookup_pool name
-      connection.lookup_storage_pool_by_name name
+      begin
+        create_pool(name)
+      rescue Libvirt::RetrieveError
+      end
     end
 
     def create_pool options

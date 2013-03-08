@@ -10,11 +10,11 @@ class Rupert::TestVolume < Test::Unit::TestCase
 
   def test_should_create
     assert @volume.save
-    @volume.destroy
+    assert @volume.destroy
   end
 
   def test_should_destroy
-    @volume.save
+    assert @volume.save
     assert @volume.destroy
   end
 

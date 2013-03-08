@@ -20,6 +20,8 @@ module Rupert
     # The XML dump of a given pool given to us by the libvirt daemon.
     attr_reader :xml_desc
 
+    # The location of the xml template
+    attr_reader :template_path
 
     # A storage space for providing CRUD methods relating to volumes and
     # physical storage.
@@ -39,6 +41,7 @@ module Rupert
       # an error
       @name = options[:name] || raise("must provide a name!")
       @path = options[:path]
+      @template_path = options[:template_path] || default_template_path
       get_pool
     end
 
@@ -71,6 +74,13 @@ module Rupert
     def create_volume volume_object
       #this needs to be prettier
       pool.create_vol_xml(volume_object.xml_template)
+    end
+
+    def find_volume_by_name name
+      begin
+        @pool.lookup_volume_by_name(name)
+      rescue Libvirt::RetrieveError
+      end
     end
 
     # Returns true if a pool exists, false otherwise.

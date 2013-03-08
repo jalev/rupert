@@ -13,6 +13,7 @@ class Rupert::TestGuest < Test::Unit::TestCase
 
   def test_should_create
     assert @guest.save
+    assert @guest.destroy
   end
 
 #  def test_should_destroy

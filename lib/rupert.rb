@@ -3,6 +3,7 @@ require 'rupert/connect'
 require 'rupert/volume'
 require 'rupert/guest'
 require 'rupert/host'
+require 'rupert/pool'
 
 module Rupert
 
