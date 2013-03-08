@@ -69,7 +69,7 @@ module Rupert
     end
 
     def create_volume volume_object
-      pool.create_volume_from_xml volume_object.xml_template
+      pool.create_vol_xml volume_object.xml_template
     end
 
     # Returns true if a pool exists, false otherwise.
@@ -87,8 +87,10 @@ module Rupert
     # means we should create a new pool), or return a Libvirt pool object, and
     # dump its xml contents. 
     def get_pool
-      if @pool = connection.lookup_storage_pool_by_name(name)
+      begin
+        @pool = connection.lookup_storage_pool_by_name(name)
         @xml_desc = @pool.xml_desc
+      rescue Libvirt::RetrieveError
       end
     end
 
