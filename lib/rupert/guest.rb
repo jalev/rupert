@@ -11,8 +11,8 @@ module Rupert
 
     attr_accessor :volume, :ram, :vcpu, :iso_file, :os_type, :cmdargs, :pool, :size, :guest, :name, :domain_type, :arch
     attr_accessor :display_type, :display_port
-    #attr_accessor :volume_format, :volume_capacity, :volume_allocation, :volume_name
 
+    attr_reader :template_path
     #:stopdoc:
     # TODO - Implementation of guest finding
     # TODO - Implementation of guest starting
@@ -60,7 +60,6 @@ module Rupert
     #
     def initialize options={}
       @connection = Rupert.connection
-      @volume = Volume.new(options)
       @name = options[:name] || raise("name is required!")
       @vcpu = options[:vcpu] || default_vcpu
       @ram = options[:ram] || default_ram
@@ -72,6 +71,9 @@ module Rupert
       @display_type = options[:display_type] || default_display_type
       @display_port = options[:display_port] || default_display_port
       @iso_file = options[:iso_file]
+      
+      @template_path = options[:template_path] || default_template_path
+      @volume = Volume.new(options)
     end
 
     def save
@@ -118,17 +120,11 @@ module Rupert
 
     private
 
-    def create_volume
-      options = {}
-      options[:name] = volume_name || name
-      options[:pool] = pool || default_pool
-      options[:format] = volume_format 
-      options[:allocation] = volume_allocation
-      options[:capacity] = volume_capacity
-    end
-
     def find_guest_by_name
-      @guest = @connection.raw.lookup_domain_by_name(name)
+      begin
+        @guest = @connection.raw.lookup_domain_by_name(name)
+        @xml_desc = @guest.xml_desc
+      end
     end
 
     def default_pool

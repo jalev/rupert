@@ -69,7 +69,8 @@ module Rupert
     end
 
     def create_volume volume_object
-      pool.create_vol_xml volume_object.xml_template
+      #this needs to be prettier
+      pool.create_vol_xml(volume_object.xml_template)
     end
 
     # Returns true if a pool exists, false otherwise.
@@ -92,6 +93,10 @@ module Rupert
         @xml_desc = @pool.xml_desc
       rescue Libvirt::RetrieveError
       end
+    end
+
+    def default_template_path
+      "pool.xml.erb"
     end
 
   end

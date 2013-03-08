@@ -29,6 +29,9 @@ module Rupert
     # The path of the volume.
     attr_accessor :path
 
+    # Path of the template
+    attr_reader :template_path
+
     # A volume can be created by passing in some options. A volume must be
     # attached to a Pool before creation.
     #
@@ -50,6 +53,7 @@ module Rupert
       @format = options[:format] || default_volume_format
       @allocation = options[:allocation] || default_allocation_size
       @capacity = options[:capacity] || default_capacity_size
+      @template_path = options[:template_path] || default_template_path
     end
 
     # Passes the volume object to a method in pool which defines the actual
@@ -79,14 +83,14 @@ module Rupert
     def find_volume name
       #todo redo this for redone pool interfacing
       begin
-        return storage_pool.lookup_volume_by_name(name)
+        return @pool.lookup_volume_by_name(name)
       rescue Libvirt::RetrieveError
       end
     end
 
     # Fetch the first pool.
     def default_pool
-      @connection.host.list_storage_pools.first
+      @connection.host.list_pools.first
     end
 
     def default_allocation_size
@@ -99,6 +103,10 @@ module Rupert
 
     def default_volume_format
       "raw"
+    end
+
+    def default_template_path
+      "volume.xml.erb"
     end
 
   end
