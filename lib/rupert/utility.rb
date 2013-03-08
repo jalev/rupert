@@ -1,5 +1,5 @@
 require 'erb'
-require 'rexml'
+require 'rexml/document'
 
 module Rupert
   module Utility
