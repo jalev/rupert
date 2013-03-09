@@ -60,7 +60,7 @@ module Rupert
     #
     def initialize options={}
       @connection = Rupert.connection
-      @name = options[:name] || raise("name is required!")
+      @name = options[:name] || raise("Missing attribute: Name")
       @vcpu = options[:vcpu] || default_vcpu
       @ram = options[:ram] || default_ram
       @os_type = options[:os_type] || default_os_type

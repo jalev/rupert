@@ -23,6 +23,12 @@ class Rupert::TestGuest < Test::Unit::TestCase
     assert @guest.save
   end
 
+  def test_should_raise_on_no_name
+    assert_raise ( RuntimeError ){
+      @guest = Rupert::Guest.new()
+    }
+  end
+
   def test_should_raise_start_before_save
     assert_raise ( Rupert::Errors::GuestNotCreated ){ @guest.start }
   end
