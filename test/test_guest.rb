@@ -36,10 +36,25 @@ class Rupert::TestGuest < Test::Unit::TestCase
   end
 
   def test_should_raise_force_shutdown_not_running
-    assert_raise ( Rupert::Errors::GuestNotStarted ) {
+    assert_raise ( Rupert::Errors::GuestNotStarted ){
       @guest.volume.save
       @guest.save
       @guest.force_shutdown
+    }
+  end
+
+  def test_should_raise_resume_not_saved
+    assert_raise ( Rupert::Errors::GuestNotCreated ){
+      @guest.resume
+    }
+  end
+
+  def test_should_raise_resume_already_running
+    assert_raise ( Rupert::Errors::GuestAlreadyRunning){
+      @guest.volume.save
+      @guest.save
+      @guest.start
+      @guest.resume
     }
   end
 

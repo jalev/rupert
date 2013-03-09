@@ -109,7 +109,8 @@ module Rupert
     end
 
     def resume
-      raise Rupert::Errors::GuestNotStarted if !running?
+      raise Rupert::Errors::GuestNotCreated if new?
+      raise Rupert::Errors::GuestAlreadyRunning if running?
       @guest.resume
       running?
     end

@@ -14,6 +14,12 @@ module Rupert
       end
     end
 
+    class GuestAlreadyRunning < StandardError
+      def message
+        "The guest has already been started"
+      end
+    end
+
     class NotFound < StandardError
       def message
         "The specified object could not be found"
