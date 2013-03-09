@@ -66,6 +66,7 @@ module Rupert
     end
 
     def destroy
+      return true if new?
       find_volume(name).delete
       new?
     end

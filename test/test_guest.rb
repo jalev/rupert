@@ -15,7 +15,7 @@ class Rupert::TestGuest < Test::Unit::TestCase
   end
 
   def teardown
-    @guest.volume.destroy if !@guest.volume.nil?
+    @guest.volume.destroy
     @guest.destroy
   end 
 
