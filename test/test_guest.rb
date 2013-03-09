@@ -21,6 +21,7 @@ class Rupert::TestGuest < Test::Unit::TestCase
 
   def test_should_save
     assert @guest.save
+    puts @guest.xml_desc.inspect
   end
 
   def test_should_raise_on_no_name

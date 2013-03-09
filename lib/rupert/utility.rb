@@ -15,9 +15,10 @@ module Rupert
     #
     def value_from_xml tree, attribute=nil
       xml = REXML::Document.new(@xml_desc)
-      # if we didn't provide an attribute, assume that we want a specific
-      # value from a tree, otherwise provide the attributes of an entire tree.
-      attribute.nil? ? xml.elements[tree].text : xml.elements[path].attributes[attribute]
+      # If we didn't provide an attribute, then we must assume that we want a
+      # specific value from the xml tree. If we do provide an attribute, then
+      # it is assumed that we want an attribute from an element.
+      attribute.nil? ? xml.elements[tree].text : xml.elements[tree].attributes[attribute]
     end
 
     def template

@@ -61,7 +61,7 @@ module Rupert
     # a volume is by default a subset of a pool.
     #
     def save
-      raise("test") unless new?
+      raise("Volume name already exists") unless new?
       pool.create_volume(self)
     end
 

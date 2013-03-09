@@ -9,10 +9,17 @@ module Rupert
   class Guest
     include Rupert::Utility
 
-    attr_accessor :volume, :ram, :vcpu, :iso_file, :os_type, :cmdargs, :pool, :size, :guest, :name, :domain_type, :arch
-    attr_accessor :display_type, :display_port
+    attr_accessor :volume, :ram, :vcpu, :iso_file, :os_type, :cmdargs, :pool, :size, :guest, :name, :domain_type, :arch, :maxram
+    attr_accessor :display_type, :display_port, :xml_desc
+
+    # The UUID of the Virtual Machine
+    attr_reader :uuid
+
+    # The xml definition dumped by libvirt
+    attr_reader :xml_desc
 
     attr_reader :template_path
+
     #:stopdoc:
     # TODO - Implementation of guest finding
     # TODO - Implementation of guest starting
@@ -78,6 +85,8 @@ module Rupert
 
     def save
       @guest = @connection.raw.define_domain_xml(xml_template)
+      @xml_desc = @guest.xml_desc
+      get_guest_info
       !new?
     end
 
@@ -143,8 +152,15 @@ module Rupert
     def find_guest_by_name
       begin
         @guest = @connection.raw.lookup_domain_by_name(name)
-        @xml_desc = @guest.xml_desc
       end
+    end
+
+    def get_guest_info
+      @xml_desc = @guest.xml_desc
+      @uuid = value_from_xml("domain/uuid")
+      @vcpu = value_from_xml("domain/vcpu")
+      @arch = value_from_xml("domain/os/type", "arch")
+      @ram = value_from_xml("domain/currentMemory")
     end
 
     def default_pool

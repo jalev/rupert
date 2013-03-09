@@ -26,6 +26,5 @@ module Rupert
       end
     end
 
-
   end
 end

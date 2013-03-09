@@ -4,6 +4,7 @@ require 'rupert/volume'
 require 'rupert/guest'
 require 'rupert/host'
 require 'rupert/pool'
+require 'rupert/exceptions'
 
 module Rupert
 
