@@ -82,6 +82,7 @@ module Rupert
     end
 
     def running?
+      return false if new?
       @guest.active?
     end
 
@@ -91,12 +92,17 @@ module Rupert
     end
 
     def restart
-      @guest.restart if !running?
+      @guest.reboot if running?
+      running?
     end
 
     def suspend
       @guest.suspend
       !running?
+    end
+
+    def state
+      @guest.state
     end
 
     def resume
@@ -111,10 +117,12 @@ module Rupert
 
     def force_shutdown
       @guest.destroy if running?
+      !running?
     end
 
     def destroy
-      @guest.force_shutdown if running?
+      return true if new?
+      force_shutdown if running?
       @guest.undefine
       !new?
     end
