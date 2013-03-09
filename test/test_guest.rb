@@ -23,8 +23,24 @@ class Rupert::TestGuest < Test::Unit::TestCase
     assert @guest.save
   end
 
-  def test_should_fail_start_before_save
-    assert_raise ( Rupert::Errors::GuestNotCreated ) { @guest.start }
+  def test_should_raise_start_before_save
+    assert_raise ( Rupert::Errors::GuestNotCreated ){ @guest.start }
+  end
+
+  def test_should_raise_shutdown_not_running
+    assert_raise ( Rupert::Errors::GuestNotStarted){
+      @guest.volume.save
+      @guest.save
+      @guest.shutdown
+    }
+  end
+
+  def test_should_raise_force_shutdown_not_running
+    assert_raise ( Rupert::Errors::GuestNotStarted ) {
+      @guest.volume.save
+      @guest.save
+      @guest.force_shutdown
+    }
   end
 
   def test_should_destroy

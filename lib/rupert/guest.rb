@@ -99,6 +99,7 @@ module Rupert
     end
 
     def suspend
+      raise Rupert::Errors::GuestNotStarted if !running?
       @guest.suspend
       !running?
     end
@@ -108,16 +109,19 @@ module Rupert
     end
 
     def resume
+      raise Rupert::Errors::GuestNotStarted if !running?
       @guest.resume
       running?
     end
 
     def shutdown
+      raise Rupert::Errors::GuestNotStarted if !running?
       @guest.shutdown
       !running?
     end
 
     def force_shutdown
+      raise Rupert::Errors::GuestNotStarted if !running?
       @guest.destroy if running?
       !running?
     end
