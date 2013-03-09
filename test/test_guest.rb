@@ -23,9 +23,22 @@ class Rupert::TestGuest < Test::Unit::TestCase
     assert @guest.save
   end
 
+  def test_should_fail_start_before_save
+    assert_raise ( Rupert::Errors::GuestNotCreated ) { @guest.start }
+  end
+
+  def test_should_destroy
+    assert @guest.destroy
+  end
+
   def test_should_create_and_destroy_volume
     assert @guest.volume.save
     assert @guest.volume.destroy
+  end
+
+  def test_should_fail_on_two_volume_save
+    assert @guest.volume.save
+    assert_raise ( RuntimeError ) { @guest.volume.save }
   end
 
   def test_should_create_and_save_volume_and_guest

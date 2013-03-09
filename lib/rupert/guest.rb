@@ -77,8 +77,8 @@ module Rupert
     end
 
     def save
-      #create_volume
       @guest = @connection.raw.define_domain_xml(xml_template)
+      !new?
     end
 
     def running?
@@ -87,11 +87,13 @@ module Rupert
     end
 
     def start
+      raise Rupert::Errors::GuestNotCreated if new?
       @guest.create if !running?
       running?
     end
 
     def restart
+      raise Rupert::Errors::GuestNotStarted if !running? 
       @guest.reboot if running?
       running?
     end
