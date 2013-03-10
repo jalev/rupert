@@ -134,4 +134,16 @@ class Rupert::TestGuest < Test::Unit::TestCase
     }
   end
 
+  def test_create_volume_with_capacity
+    @guest = Rupert::Guest.new(:name => @guest.name, :volume => {:capacity => 10})
+    assert_equal( 10, @guest.volume.capacity )
+  end
+
+  def test_create_volume_with_different_name_than_guest
+    @guest = Rupert::Guest.new(:name => @guest.name, :volume => {:name => "test_name"})
+    assert_equal( "test_name", @guest.volume.name )
+    assert @guest.volume.save
+    assert @guest.save
+  end
+
 end

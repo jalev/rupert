@@ -23,10 +23,7 @@ module Rupert
     attr_reader :id
 
     #:stopdoc:
-    # TODO - Implementation of guest finding
-    # TODO - Implementation of guest starting
-    # TODO - Implementation of guest stopping
-    # TODO - Implementation of guest destroying
+    # TODO puppet modules
     #
     #:startdoc:
 
@@ -37,7 +34,7 @@ module Rupert
     #
     # * +:name+ - The name of the volume to be created
     #
-    # === Guest Creation
+    # === Additional arguments: Guest Creation
     # * +:vcpu+ - The amount of VCPUs to attach to the guest. Defaults to 1.
     # * +:ram+  - The amount of RAM to attach to the guest. Defaults to 512mb.
     # * +:iso_file+  - The location of the ISO of which to install the Guest from.
@@ -56,16 +53,26 @@ module Rupert
     # Defaults to -1, which is an automatically assigned number by the Libvirt
     # daemon.
     #
-    # === Volume Creation
-    # * +:volume_format+  - The format of the volume for the guest.
-    # * +:volume_capacity+  - The capacity of the volume
-    # * +:volume_allocation+  - The allocation size of the volume
+    # === Additional arguments: Volume creation
+    # You can specify these as additional arguments if you ensure you put them
+    # into a :volume array. Please refer to Rupert::Volume for parameter
+    # specification.
     #
     # == Examples
-    #     
-    #     Rupert::Guest.new(:name => "test", :ram => 512, 
-    #               :iso  => "/isos/cent.iso",
-    #               :cmdargs => "ks=http://localhost/ks.cfg")
+    #
+    # ==== Create a guest with 512mb RAM
+    #     Rupert::Guest.new(:name => "test", :ram => 512 )
+    #
+    # ==== Create a guest with a disk size of 10gb
+    #     Rupert::Guest.new(:name => "test", :volume => {:capacity => 10} )
+    #
+    # ==== Alternate ways of creating guests
+    #     guest = Rupert::Guest.new(:name => "test")
+    #     guest.ram = 1024
+    #     guest.volume.capacity = 10
+    #     guest.volume.save
+    #     guest.save
+    #                   
     #
     def initialize options={}
       @connection = Rupert.connection
@@ -83,13 +90,19 @@ module Rupert
       @display_type ||= options[:display_type] || default_display_type
       @display_port ||= options[:display_port] || default_display_port
       @iso_file = options[:iso_file]
-      
       @template_path = options[:template_path] || default_template_path
-      @volume = Volume.new(options)
+      
+      # We want to be able to pass seperate volume commands at object
+      # instanciation. 
+      #
+      volops = {:name => @name} if @name
+      volops = volops.merge(options[:volume]) if options[:volume]
+      @volume = Volume.new(volops)
     end
 
     # Saves the virtual machine. The same method is used to alter the virtual
     # machine.
+    #
     def save
       raise Rupert::Errors::GuestIsRunning if running?
       @guest = @connection.raw.define_domain_xml(xml_template)
@@ -100,7 +113,7 @@ module Rupert
     end
 
     def running?
-      return false if new?
+      return false if new? # We need to return false if guest hasn't been defined
       @guest.active?
     end
 
@@ -153,6 +166,7 @@ module Rupert
     end
 
     # A bool to ensure that we know if the guest has been defined or not
+    #
     def new?
       @guest.nil?
     end
@@ -167,9 +181,13 @@ module Rupert
       end
     end
 
+    # Return information about the virtual machine from an XML dump provided
+    # by libvirt
+    #
     def get_guest_info
       return if new? # If the guest doesn't exist, then don't return anything.
       @xml_desc = @guest.xml_desc
+      @id = @guest.id if running? # The guest will not return an ID unless running
       @uuid = value_from_xml("domain/uuid")
       @vcpu = value_from_xml("domain/vcpu")
       @arch = value_from_xml("domain/os/type", "arch")
@@ -216,15 +234,19 @@ module Rupert
     end
 
     # The default graphical provider. Defaults to VNC.
+    #
     def default_display_type
       "vnc"
     end
 
+    # Default port. -1 indicates that the system should provide the port.
+    #
     def default_display_port
       "-1"
     end
 
     # The default path of the template which we use to create guests. 
+    #
     def default_template_path
       "guest.xml.erb"
     end

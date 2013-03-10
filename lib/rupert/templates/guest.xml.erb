@@ -31,7 +31,7 @@
       <address type='drive' controller='0' bus='1' unit='0'/>
     </disk>
   <%- end -%>
-  <%- if volume -%>
+  <%- if !volume.new? -%>
     <disk type='file' device='disk'>
       <driver name='qemu' type='<%= volume.format %>' cache='none'/>
       <source file='<%= volume.path %>'/>
