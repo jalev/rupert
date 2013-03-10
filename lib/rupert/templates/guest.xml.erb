@@ -1,5 +1,8 @@
 <domain type='<%= domain_type %>'>
   <name><%= name %></name>
+  <%- if uuid -%>
+    <uuid><%= uuid %></uuid>
+  <% end -%>
   <memory unit="MB"><%= ram %></memory>
   <vcpu><%= vcpu %></vcpu>
   <os>
@@ -19,7 +22,7 @@
   <on_reboot>restart</on_reboot>
   <on_crash>restart</on_crash>
   <devices>
-  <% if iso_file -%>
+  <%- if iso_file -%>
     <disk type='file' device='cdrom'>
       <driver name='qemu' type='raw'/>
       <source file='<%= iso_file %>'/>
@@ -27,12 +30,14 @@
       <readonly/>
       <address type='drive' controller='0' bus='1' unit='0'/>
     </disk>
-  <% end -%>
+  <%- end -%>
+  <%- if volume -%>
     <disk type='file' device='disk'>
       <driver name='qemu' type='<%= volume.format %>' cache='none'/>
       <source file='<%= volume.path %>'/>
       <target dev='vda' bus='virtio'/>
     </disk>
+  <% end %>
     <interface type='bridge'>
       <source bridge='br0'/>
       <model type='virtio'/>

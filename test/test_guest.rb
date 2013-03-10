@@ -21,7 +21,6 @@ class Rupert::TestGuest < Test::Unit::TestCase
 
   def test_should_save
     assert @guest.save
-    puts @guest.xml_desc.inspect
   end
 
   def test_should_raise_on_no_name
@@ -110,6 +109,22 @@ class Rupert::TestGuest < Test::Unit::TestCase
     assert @guest.save
     assert @guest.start
     assert @guest.restart
+  end
+
+  def test_should_find_already_existing_guest
+    assert @guest.volume.save
+    assert @guest.save
+    tempguest = Rupert::Guest.new(:name => @guest.name)
+    assert @guest.uuid == tempguest.uuid
+  end
+
+  def test_should_update_already_existing_guest
+    @guest.save
+    @guest.ram = 1000
+    puts @guest.xml_template
+    @guest.save
+    puts @guest.ram
+
   end
 
 end

@@ -10,7 +10,7 @@ module Rupert
     include Rupert::Utility
 
     attr_accessor :volume, :ram, :vcpu, :iso_file, :os_type, :cmdargs, :pool, :size, :guest, :name, :domain_type, :arch, :maxram
-    attr_accessor :display_type, :display_port, :xml_desc
+    attr_accessor :display_type, :display_port
 
     # The UUID of the Virtual Machine
     attr_reader :uuid
@@ -19,6 +19,8 @@ module Rupert
     attr_reader :xml_desc
 
     attr_reader :template_path
+
+    attr_reader :id
 
     #:stopdoc:
     # TODO - Implementation of guest finding
@@ -68,15 +70,18 @@ module Rupert
     def initialize options={}
       @connection = Rupert.connection
       @name = options[:name] || raise("Missing attribute: Name")
-      @vcpu = options[:vcpu] || default_vcpu
-      @ram = options[:ram] || default_ram
-      @os_type = options[:os_type] || default_os_type
-      @domain_type = options[:domain_type] || default_domain_type
-      @arch = options[:arch] || default_arch
+      find_guest_by_name
+      # If we have found the guest, then we have no need to set the values,
+      # otherwise...
+      @vcpu ||= options[:vcpu] || default_vcpu
+      @ram ||= options[:ram] || default_ram
+      @os_type ||= options[:os_type] || default_os_type
+      @domain_type ||= options[:domain_type] || default_domain_type
+      @arch ||= options[:arch] || default_arch
       @cmdargs = options[:cmdargs]
       @pool = options[:pool] || default_pool
-      @display_type = options[:display_type] || default_display_type
-      @display_port = options[:display_port] || default_display_port
+      @display_type ||= options[:display_type] || default_display_type
+      @display_port ||= options[:display_port] || default_display_port
       @iso_file = options[:iso_file]
       
       @template_path = options[:template_path] || default_template_path
@@ -84,9 +89,11 @@ module Rupert
     end
 
     def save
+      raise Rupert::Errors::Guest::GuestIsRunning if running?
       @guest = @connection.raw.define_domain_xml(xml_template)
       @xml_desc = @guest.xml_desc
       get_guest_info
+      #return a bool to ensure we can pass any assertions
       !new?
     end
 
@@ -143,6 +150,7 @@ module Rupert
       !new?
     end
 
+    # A bool to ensure that we know if the guest has been defined or not
     def new?
       @guest.nil?
     end
@@ -152,15 +160,20 @@ module Rupert
     def find_guest_by_name
       begin
         @guest = @connection.raw.lookup_domain_by_name(name)
+        get_guest_info
+      rescue Libvirt::RetrieveError
       end
     end
 
     def get_guest_info
+      return if new? # If the guest doesn't exist, then don't return anything.
       @xml_desc = @guest.xml_desc
       @uuid = value_from_xml("domain/uuid")
       @vcpu = value_from_xml("domain/vcpu")
       @arch = value_from_xml("domain/os/type", "arch")
       @ram = value_from_xml("domain/currentMemory")
+      @display_type = value_from_xml("domain/devices/graphics", "type")
+      @display_port = value_from_xml("domain/devices/graphics", "port")
     end
 
     def default_pool
