@@ -119,12 +119,19 @@ class Rupert::TestGuest < Test::Unit::TestCase
   end
 
   def test_should_update_already_existing_guest
-    @guest.save
-    @guest.ram = 1000
-    puts @guest.xml_template
-    @guest.save
-    puts @guest.ram
+    assert @guest.save
+    @guest.ram = 1024
+    assert @guest.save
+  end
 
+  def test_should_raise_on_modification_while_running
+    assert @guest.volume.save
+    assert @guest.save
+    assert @guest.start
+    @guest.ram = 1000
+    assert_raise ( Rupert::Errors::GuestIsRunning ){ 
+      @guest.save
+    }
   end
 
 end

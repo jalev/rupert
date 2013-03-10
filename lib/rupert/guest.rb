@@ -88,8 +88,10 @@ module Rupert
       @volume = Volume.new(options)
     end
 
+    # Saves the virtual machine. The same method is used to alter the virtual
+    # machine.
     def save
-      raise Rupert::Errors::Guest::GuestIsRunning if running?
+      raise Rupert::Errors::GuestIsRunning if running?
       @guest = @connection.raw.define_domain_xml(xml_template)
       @xml_desc = @guest.xml_desc
       get_guest_info

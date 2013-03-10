@@ -20,6 +20,12 @@ module Rupert
       end
     end
 
+    class GuestIsRunning < StandardError
+      def message
+        "Operation cannot be completed as guest is currently running"
+      end
+    end
+
     class NotFound < StandardError
       def message
         "The specified object could not be found"
