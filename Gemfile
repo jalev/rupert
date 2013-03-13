@@ -10,6 +10,7 @@ gem 'ruby-libvirt'
 group :development do
   gem "shoulda", ">= 0"
   gem "bundler"
+  gem "ronn"
   gem "rdoc", "~> 3.12"
   gem "jeweler", "~> 1.8.4"
 end
