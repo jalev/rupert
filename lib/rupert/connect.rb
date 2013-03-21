@@ -9,8 +9,12 @@ module Rupert
     # open up a connection to the hypervisor.
     #
     def initialize uri, options = {}
-      @connection = Libvirt::open(uri)
-      @raw = @connection
+      begin
+        @connection = Libvirt::open(uri)
+        @raw = @connection
+      rescue Libvirt::ConnectionError => e
+        raise Rupert::Errors::ConnectionError.new("Connection failed: #{e.to_s.split("Call to virConnectOpen failed: ")[1]}")
+      end
     end
 
     # Returns the underlaying Libvirt connection for when we're really, really
