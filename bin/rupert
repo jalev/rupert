@@ -1,5 +1,4 @@
 #!/usr/bin/env ruby
-require 'rupert'
 
 # TODO - Add CLI support
 # CLI command ideas:
@@ -9,3 +8,13 @@ require 'rupert'
 #   - rupert modify <vm> add/remove <something>
 #   - rupert shutdown <vm>
 #   - rupert delete <vm/network/pool>
+
+require "pathname"
+bin_file = Pathname.new(__FILE__).realpath
+$:.unshift File.expand_path("../../lib", bin_file)
+
+require 'rupert'
+require 'rupert/cli'
+
+Rupert::CLI.start
+
