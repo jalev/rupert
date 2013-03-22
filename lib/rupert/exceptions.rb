@@ -1,6 +1,12 @@
 module Rupert
   module Errors
+
+    class AttributeNotExist < AttributeError; end
+
     class AlreadyExist < StandardError; end
+
+    class ConnectionError < StandardError
+    end
 
     class GuestNotCreated < StandardError 
       def message

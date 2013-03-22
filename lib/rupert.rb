@@ -1,3 +1,4 @@
+require 'rupert/cli'
 require 'rupert/utility'
 require 'rupert/connect'
 require 'rupert/volume'
@@ -11,7 +12,8 @@ module Rupert
   class << self
 
     def connection 
-      return @connection
+      return @connection if !@connection.closed? and @connection
+      raise Rupert::Errors::NoConnectionError
     end
 
     def connect uri 
