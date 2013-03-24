@@ -1,3 +1,4 @@
+require 'rupert/exceptions'
 require 'rupert/cli'
 require 'rupert/utility'
 require 'rupert/connect'
@@ -5,7 +6,7 @@ require 'rupert/volume'
 require 'rupert/guest'
 require 'rupert/host'
 require 'rupert/pool'
-require 'rupert/exceptions'
+require 'rupert/nic'
 
 module Rupert
 

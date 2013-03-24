@@ -1,21 +1,28 @@
 require 'libvirt'
-require 'rupert'
 require 'rupert/utility'
 
 module Rupert
   class Nic
     include Rupert::Utility
 
-    attr_reader :name
-    attr_reader :type
-    attr_reader :mac
-    attr_reader :ip
+    attr_accessor :name
+    attr_accessor :dhcp
+    attr_accessor :conntype
+    attr_accessor :mac
+    attr_accessor :ip
+    attr_accessor :onboot
+    attr_accessor :ipPrefix
+    attr_accessor :bridgeIfaceName
+    attr_accessor :bridgeIfaceType
+    attr_accessor :gateway
+    attr_accessor :template_path
 
+    attr_reader :xml_desc
 
     def initialize options = {}
-      @connection = Rupert.active_connection
-      @name = options[:name] || raise Rupert::Errors::AttributeNotExist
-      @type = options[:type] || default_interface_type
+      @connection = Rupert.connection
+      @name = options[:name] || raise(Rupert::Errors::AttributeNotExist)
+      @conntype = options[:conntype] || default_interface_type
       @mac = options[:mac]
       @dhcp = options[:dhcp]
       @onboot = options[:onboot] 
@@ -24,6 +31,7 @@ module Rupert
       @ipPrefix = options[:ipPrefix] unless dhcp
       @bridgeIfaceType = options[:bridgeIfaceType]
       @bridgeIfaceName = options[:bridgeIfaceName]
+      @template_path = options[:template_path] || default_template_path
     end
 
     def new?
@@ -31,8 +39,8 @@ module Rupert
     end
 
     def save
-      @nic = @connection.define_interface_xml(xmldesc)
-      get_nic_info
+      @nic = @connection.raw.define_interface_xml(xml_template)
+      @xml_desc = @nic.xml_desc
       !new?
     end
 
@@ -55,8 +63,16 @@ module Rupert
       "bridge"
     end
 
+    def default_template_path
+      "nic.xml.erb"
+    end
+
     def active?
       @nic.active?
+    end
+
+    def to_s
+      puts @nic.xml_desc
     end
 
     private
@@ -72,7 +88,7 @@ module Rupert
       return if new?
       @xml_desc = @nic.xml_desc
       @name = value_from_xml("interface", "name")
-      @type = value_from_xml("interface", "type")
+      @conntype = value_from_xml("interface", "type")
       @onboot = value_from_xml("interface/start", "mode") 
       @ip = value_from_xml("interface/protocol/ip", "address")
       @mac = value_from_xml("interface/bridge/interface/mac", "address")

@@ -27,7 +27,7 @@ module Rupert
 
     # Return our template with the values of the template filled in.
     #
-    def xml_template type=nil
+    def xml_template 
       ERB.new(template, nil, '-').result(binding)
    end
   end
