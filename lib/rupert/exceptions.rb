@@ -7,11 +7,30 @@ module Rupert
       end
     end
 
+    class MissingRequiredAttribute < ArgumentError
+      def message
+        "A required attribute is missing."
+      end
+    end
+
+
     class AlreadyExist < StandardError; end
 
     class ConnectionError < StandardError
     end
 
+    class GuestAlreadyExist < StandardError 
+      def message
+        "The guest with this name already exists."
+      end
+    end
+
+    class GuestNotFound < StandardError 
+      def message
+        "The guest has not been found with that info"
+      end
+    end
+    
     class GuestNotCreated < StandardError 
       def message
         "The guest has not been created"
@@ -27,6 +46,12 @@ module Rupert
     class GuestAlreadyRunning < StandardError
       def message
         "The guest has already been started"
+      end
+    end
+
+    class GuestIsNotRunning < StandardError
+      def message
+        "Operation cannot be completed as guest is not running"
       end
     end
 
@@ -57,6 +82,12 @@ module Rupert
     class NotFound < StandardError
       def message
         "The specified object could not be found"
+      end
+    end
+
+    class VolumeAlreadyExist< StandardError
+      def message
+        "A disk with this name already exists"
       end
     end
 

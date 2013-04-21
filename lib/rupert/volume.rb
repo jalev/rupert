@@ -17,11 +17,11 @@ module Rupert
     attr_accessor :pool
     
     # The size of the volume.
-    attr_accessor :capacity 
+    attr_accessor :size
     
     # How much of the volume should be allocated. If not specified, then a
     # sparse file is created instead.
-    attr_accessor :allocation 
+    attr_accessor :alloc
     
     # The format of the volume. 
     attr_accessor :format 
@@ -49,10 +49,10 @@ module Rupert
     def initialize options = {}
       @connection = Rupert.connection
       @name = options[:name] || raise("Volume needs a name")
-      @pool = options[:pool].nil? ? default_pool : @connection.host.lookup_pool(options[:pool]) 
+      @pool = options[:pool].nil? ? default_pool : @connection.host.lookup_pool(:name => options[:pool]) 
       @format = options[:format] || default_volume_format
-      @allocation = options[:allocation] || default_allocation_size
-      @capacity = options[:capacity] || default_capacity_size
+      @alloc = options[:alloc] || default_allocation_size
+      @size = options[:size] || default_capacity_size
       @template_path = options[:template_path] || default_template_path
     end
 
@@ -61,7 +61,6 @@ module Rupert
     # a volume is by default a subset of a pool.
     #
     def save
-      raise("Volume name already exists") unless new?
       pool.create_volume(self)
     end
 
@@ -96,11 +95,11 @@ module Rupert
     end
 
     def default_allocation_size
-      0 
+      "0"
     end
 
     def default_capacity_size
-      5
+      "5"
     end
 
     def default_volume_format

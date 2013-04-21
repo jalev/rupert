@@ -4,11 +4,14 @@
     <uuid><%= uuid %></uuid>
   <% end -%>
   <memory unit="MB"><%= ram %></memory>
-  <vcpu><%= vcpu %></vcpu>
+  <vcpu><%= cpu %></vcpu>
   <os>
     <type arch='<%= arch %>'><%= os_type%></type>
     <% if cmdargs -%>
       <cmdline><%= cmdargs %></cmdline>
+    <% end -%>
+    <% if iso -%>
+      <boot dev='cdrom'/>
     <% end -%>
     <boot dev='hd'/>
   </os>
@@ -22,10 +25,10 @@
   <on_reboot>restart</on_reboot>
   <on_crash>restart</on_crash>
   <devices>
-  <%- if iso_file -%>
+  <%- if iso -%>
     <disk type='file' device='cdrom'>
       <driver name='qemu' type='raw'/>
-      <source file='<%= iso_file %>'/>
+      <source file='<%= iso %>'/>
       <target dev='hdc' bus='ide' />
       <readonly/>
       <address type='drive' controller='0' bus='1' unit='0'/>

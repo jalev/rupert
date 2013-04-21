@@ -19,16 +19,24 @@ module Rupert
       connection.hostname
     end
 
+    # Finds the information about a guest via its ID
+    #
+    def find_guest_by_id
+
+    end
+
     # Lists all defined guests on our host.
     #
     def list_guests
-      connection.list_domains
+      ids = connection.list_domains
+      find_guests_by_id(ids)
     end
 
     # Lists all inactive guests on our host.
     #
     def list_inactive_guests
-      connection.list_defined_domains
+      names = connection.list_defined_domains
+      find_guests_by_name(names)
     end
 
     # Lists all available network interfaces on our host.
@@ -47,7 +55,7 @@ module Rupert
     #
     def list_pools
       connection.list_storage_pools.map do | pool |
-        create_pool({:name => pool})
+        pool({:name => pool})
       end
     end
 
@@ -61,6 +69,25 @@ module Rupert
       connection.list_networks
     end
 
+    private
+
+    # Will return Guest objects which can be formatted for later use.
+    #
+    def find_guests_by_id id
+      Array(id).map do | guestId |
+        name = connection.lookup_domain_by_id(guestId).name
+        guest({:name => name})
+      end
+    end
+
+    # Will return Guest objects which can be formatted for later use.
+    #
+    def find_guests_by_name name
+      Array(name).map do | guestName |
+        guest({:name => guestName})
+      end
+    end
+
     def lookup_pool name
       begin
         create_pool(name)
@@ -68,8 +95,12 @@ module Rupert
       end
     end
 
-    def create_pool options
+    def pool options
       Rupert::Pool.new(options)
+    end
+  
+    def guest options
+      Rupert::Guest.new(options)
     end
 
   end

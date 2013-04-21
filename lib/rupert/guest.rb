@@ -9,7 +9,7 @@ module Rupert
   class Guest
     include Rupert::Utility
 
-    attr_accessor :volume, :ram, :vcpu, :iso_file, :os_type, :cmdargs, :pool, :size, :guest, :name, :domain_type, :arch, :maxram
+    attr_accessor :volume, :ram, :cpu, :iso, :os_type, :cmdargs, :pool, :size, :guest, :name, :domain_type, :arch, :maxram
     attr_accessor :display_type, :display_port
 
     # The UUID of the Virtual Machine
@@ -37,7 +37,7 @@ module Rupert
     # === Additional arguments: Guest Creation
     # * +:vcpu+ - The amount of VCPUs to attach to the guest. Defaults to 1.
     # * +:ram+  - The amount of RAM to attach to the guest. Defaults to 512mb.
-    # * +:iso_file+  - The location of the ISO of which to install the Guest from.
+    # * +:iso+  - The location of the ISO of which to install the Guest from.
     # * +:os_type+  - The type of Guest to install. Defaults to HVM (Hardware
     # Virtual-Machine).
     # * +:domain_type+  - The type of domain we want to install. Defaults to
@@ -76,11 +76,11 @@ module Rupert
     #
     def initialize options={}
       @connection = Rupert.connection
-      @name = options[:name] || raise("Missing attribute: Name")
-      find_guest_by_name
+      @name = options[:name] || raise("Missing attribute: Name") unless options[:id] || options[:uuid]
+      find_guest_by_name 
       # If we have found the guest, then we have no need to set the values,
       # otherwise...
-      @vcpu ||= options[:vcpu] || default_vcpu
+      @cpu ||= options[:cpu] || default_vcpu
       @ram ||= options[:ram] || default_ram
       @os_type ||= options[:os_type] || default_os_type
       @domain_type ||= options[:domain_type] || default_domain_type
@@ -89,14 +89,21 @@ module Rupert
       @pool = options[:pool] || default_pool
       @display_type ||= options[:display_type] || default_display_type
       @display_port ||= options[:display_port] || default_display_port
-      @iso_file = options[:iso_file]
+      @iso = options[:iso]
       @template_path = options[:template_path] || default_template_path
       
       # We want to be able to pass seperate volume commands at object
       # instanciation. 
       #
-      volops = {:name => @name} if @name
-      volops = volops.merge(options[:volume]) if options[:volume]
+      if options[:disk_name] || @disk_name
+        volname = {:name => options[:disk_name]}
+      else
+        volname = {:name => @name} 
+      end
+      volops = {:size => options[:disk_size], :alloc => options[:disk_alloc],
+                :pool =>  options[:pool], :format => options[:disk_format]}
+
+      volops = volops.merge(volname)
       @volume = Volume.new(volops)
     end
 
@@ -104,7 +111,7 @@ module Rupert
     # machine.
     #
     def save
-      raise Rupert::Errors::GuestIsRunning if running?
+      raise Rupert::Errors::MissingAttribute if @name.nil?
       @guest = @connection.raw.define_domain_xml(xml_template)
       @xml_desc = @guest.xml_desc
       get_guest_info
@@ -136,7 +143,24 @@ module Rupert
     end
 
     def state
-      @guest.state
+      case @guest.state[0]
+      when 0
+        return "No State"
+      when 1
+        return "Running"
+      when 2
+        return "Blocked"
+      when 3
+        return "Paused"
+      when 4
+        return "Shutting Down"
+      when 5
+        return "Shut Off"
+      when 6
+        return "Crashed"
+      when 7
+        return "Suspended by VM Power Management"
+      end
     end
 
     def resume
@@ -171,7 +195,37 @@ module Rupert
       @guest.nil?
     end
 
+    def dump_template_xml
+      xml_template
+    end
+
+    def dump_xml
+      @guest.xml_desc
+    end
+
+    def get_vnc_port
+      raise Rupert::Errors::GuestNotStarted if !running?
+      find_guest_by_name
+      @display_port
+    end
+
     private
+
+    def get_info_by_id
+      begin
+        @guest = @connection.raw.lookup_domain_by_id(id)
+        get_guest_info
+      rescue Libvirt::RetrieveError
+      end
+    end
+
+    def get_info_by_uuid
+      begin
+        @guest = @connection.raw.lookup_domain_by_id(uuid)
+        get_guest_info
+      rescue Libvirt::RetrieveError
+      end
+    end
 
     def find_guest_by_name
       begin
@@ -189,7 +243,7 @@ module Rupert
       @xml_desc = @guest.xml_desc
       @id = @guest.id if running? # The guest will not return an ID unless running
       @uuid = value_from_xml("domain/uuid")
-      @vcpu = value_from_xml("domain/vcpu")
+      @cpu = value_from_xml("domain/vcpu")
       @arch = value_from_xml("domain/os/type", "arch")
       @ram = value_from_xml("domain/currentMemory")
       @display_type = value_from_xml("domain/devices/graphics", "type")
