@@ -1,7 +1,74 @@
 require 'thor'
 require 'rupert'
+require 'tempfile'
 
 module Rupert
+
+  class Debug < Thor
+    desc "vm-create", "Creates a virtual machine"
+    method_option :name, 
+                  :aliases  =>  "-n", 
+                  :desc     =>  "The name of the thing you are going to create", 
+                  :required =>  true,
+                  :type     =>  :string
+
+    method_option :remote,
+                  :desc         =>  "Information about the remote installer",
+                  :required     =>  false,
+                  :type         =>  :string
+
+    method_option :connection,
+                  :aliases  =>  "-c",
+                  :desc     =>  "The connection to the libvirt host", 
+                  :required =>  false,
+                  :type     =>  :string
+
+    method_option :save,
+                  :alias    =>  "-s",
+                  :desc     =>  "Save virtual machine",
+                  :type     =>  :boolean
+                  
+    method_option :run,
+                  :alias    =>  "-r",
+                  :desc     =>  "Save virtual machine",
+                  :type     =>  :boolean
+                  
+    method_option :disk,
+                  :alias    =>  "-d",
+                  :desc     =>  "Save virtual machine",
+                  :type     =>  :boolean
+                  
+    method_option :kickstart,
+                  :alias    =>  "-k",
+                  :desc     =>  "Save virtual machine",
+                  :type     =>  :boolean
+                  
+
+    def vm_create
+      conn = options[:connection]
+      if !conn
+        conn = "qemu+ssh://root@localhost/system"
+      end
+      @connection = Rupert::connect(conn)
+      @vm = Rupert::Guest.new(options)
+      @vm.os = "centos"
+      puts options
+      @vm.write_kickstart
+      puts @vm.kickstart_template
+      case options
+      when options[:disk] == true
+        @vm.volume.save
+      when options[:kickstart] == true
+        @vm.write_kickstart
+        puts @vm.kickstart_file
+      when options[:save] == true
+        @vm.save
+      when options[:run] == true
+        @vm.start
+        system("vncviewer :#{@vm.get_vnc_port}")
+      end
+    end
+  end
 
   class Create < Thor
     desc "vm ","Creates a virtual machine."
@@ -10,6 +77,26 @@ module Rupert
                   :aliases  =>  "-n", 
                   :desc     =>  "The name of the thing you are going to create", 
                   :required =>  true,
+                  :type     =>  :string
+
+    method_option :no_vnc,
+                  :desc     =>  "Do not launch VNC session",
+                  :required =>  false,
+                  :type     =>  :boolean
+
+    method_option :virt_type,
+                  :desc     =>  "Which hypervisor the machine should use",
+                  :required =>  false,
+                  :type     =>  :string
+
+    method_option :services,
+                  :desc     =>  "What should be installed on the machine?",
+                  :required =>  false,
+                  :type     =>  :array
+
+    method_option :os,
+                  :desc     =>  "Which operating system to install",
+                  :required =>  false,
                   :type     =>  :string
 
     method_option :connection,
@@ -35,8 +122,23 @@ module Rupert
                   :required     =>  false,
                   :type         =>  :numeric
 
-    method_option :os,
-                  :desc         =>  "The type of OS to install.",
+    method_option :hostname,
+                  :desc         =>  "The hostname of the machine",
+                  :required     =>  true,
+                  :type         =>  :string
+
+    method_option :kickstart,
+                  :desc         =>  "kickstart the installation",
+                  :required     =>  false,
+                  :type         =>  :boolean
+
+    method_option :root_pass,
+                  :desc         =>  "root password",
+                  :required     =>  false,
+                  :type         =>  :string
+
+    method_option :remote,
+                  :desc         =>  "Information about the remote installer",
                   :required     =>  false,
                   :type         =>  :string
 
@@ -101,24 +203,36 @@ module Rupert
                   :default      =>  :false
 
     def vm 
-      begin
+#      begin
         conn = options[:connection]
         if !conn
-          conn = "qemu+ssh://root@localhost/system"
+          conn = "qemu:///system"
         end
+        
         @connection = Rupert::connect(conn)
         @vm = Rupert::Guest.new(options)
+        if options[:kickstart]
+          @vm.write_kickstart
+        end
         raise Rupert::Errors::GuestAlreadyExist.new if !@vm.new?
         @vm.volume.save if @vm.volume.new?
         @vm.save
         @vm.start
-        if options[:no_vnc] == false
-          spawn("vncviewer :#{@vm.get_vnc_port}")
+        if options[:remote]
+          @vm.delete_tmp_file(@vm.initrdtmp)
+          @vm.delete_tmp_file(@vm.kerneltmp)
+          @vm.cmdargs = nil
+          @vm.kerneltmp = nil
+          @vm.initrdtmp = nil
+          @vm.kickstart = nil 
+          puts @vm.updated?
         end
-      rescue => e
-        puts "#{e.message}"
-      end
-      #Rupert::Guest.new(options)
+        system("vncviewer :#{@vm.get_vnc_port}")
+
+
+#      rescue => e
+#        puts "#{e.message}"
+#      end
     end
 
     desc "disk","Creates a disk"
@@ -317,7 +431,10 @@ module Rupert
     desc "edit SUBCOMMAND", "edit a thing,"
     subcommand "edit", Edit
 
-    desc "list_vms", "lists virtual machines"
+    desc "debug SUBCOMMAND", "debugging"
+    subcommand "debug", Debug
+
+    desc "list-vms", "lists virtual machines"
     method_option :all,
                   :aliases  =>  "--a",
                   :desc     =>  "list all virtual machines, including ones shut down.",

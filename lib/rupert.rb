@@ -1,6 +1,7 @@
 require 'rupert/exceptions'
 require 'rupert/cli'
 require 'rupert/utility'
+require 'rupert/kickstart'
 require 'rupert/connect'
 require 'rupert/volume'
 require 'rupert/guest'

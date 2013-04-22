@@ -8,9 +8,10 @@ module Rupert
   #
   class Guest
     include Rupert::Utility
+    include Rupert::Kickstart
 
     attr_accessor :volume, :ram, :cpu, :iso, :os_type, :cmdargs, :pool, :size, :guest, :name, :domain_type, :arch, :maxram
-    attr_accessor :display_type, :display_port
+    attr_accessor :display_type, :display_port, :remote, :kickstart_file, :root_pass, :kickstart, :os, :remote, :kerneltmp, :initrdtmp, :kickstart_template
 
     # The UUID of the Virtual Machine
     attr_reader :uuid
@@ -82,7 +83,10 @@ module Rupert
       # otherwise...
       @cpu ||= options[:cpu] || default_vcpu
       @ram ||= options[:ram] || default_ram
+      @os = options[:os]  
       @os_type ||= options[:os_type] || default_os_type
+      @hostname ||= options[:hostname] 
+      @kickstart = options[:kickstart] 
       @domain_type ||= options[:domain_type] || default_domain_type
       @arch ||= options[:arch] || default_arch
       @cmdargs = options[:cmdargs]
@@ -90,8 +94,14 @@ module Rupert
       @display_type ||= options[:display_type] || default_display_type
       @display_port ||= options[:display_port] || default_display_port
       @iso = options[:iso]
+      @remote = options[:remote]
       @template_path = options[:template_path] || default_template_path
+      @root_pass = options[:root_pass]
       
+      if options[:remote]
+        @kerneltmp = temp_kernel(@remote)
+        @initrdtmp = temp_initrd(@remote)
+      end
       # We want to be able to pass seperate volume commands at object
       # instanciation. 
       #
@@ -119,9 +129,17 @@ module Rupert
       !new?
     end
 
+    def tmp_save
+      return @connection.raw.define_domain_xml(xml_template)
+    end
+
     def running?
       return false if new? # We need to return false if guest hasn't been defined
       @guest.active?
+    end
+
+    def updated?
+      return @guest.updated?
     end
 
     def start
@@ -248,6 +266,9 @@ module Rupert
       @ram = value_from_xml("domain/currentMemory")
       @display_type = value_from_xml("domain/devices/graphics", "type")
       @display_port = value_from_xml("domain/devices/graphics", "port")
+      @kerneltmp = value_from_xml("domain/os/kernel") if @kerneltmp
+      @initrdtmp = value_from_xml("domain/os/initrd") if @initrdtmp
+      @cmdargs  = value_from_xml("domain/os/cmdline") if @cmdargs || @kickstart || @remote
     end
 
     def default_pool
