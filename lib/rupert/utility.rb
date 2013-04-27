@@ -29,6 +29,19 @@ module Rupert
     #
     def xml_template 
       ERB.new(template, nil, '-').result(binding)
-   end
+    end
+
+    def to_kb megabytes
+      return megabytes.to_i * 1024
+    end
+
+    def convert_from_kb_to_mb kb
+      return kb.to_i / 1024
+    end
+
+    def convert_to_gb bytes
+      return bytes.to_i / 1073741824
+    end
+
   end
 end

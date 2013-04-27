@@ -1,9 +1,17 @@
 module Rupert
   module Errors
 
+    # General Errors
+
     class AttributeNotExist < ArgumentError
       def message
         "A variable is missing"
+      end
+    end
+
+    class NotValidURL < ArgumentError
+      def message
+        "URL provided is not valid. Please use 'http://', 'ftp://', or 'nfs:', and terminate with a /"
       end
     end
 
@@ -13,11 +21,25 @@ module Rupert
       end
     end
 
+    class NoOSSpecified < ArgumentError
+      def message
+        "The OS name was not specified. Please specify the name of the OS you are installing."
+      end
+    end
+
+    class MissingRemoteUrl < ArgumentError
+      def message
+        "Requires a remote url!"
+      end
+    end
 
     class AlreadyExist < StandardError; end
 
     class ConnectionError < StandardError
     end
+
+
+    # Guest Errors
 
     class GuestAlreadyExist < StandardError 
       def message
@@ -61,6 +83,22 @@ module Rupert
       end
     end
 
+    # Pool Errors
+
+    class PoolNeedSave < StandardError
+      def message
+        "Pool needs to be saved before any operations can occur on it."
+      end
+    end
+
+    class NotDiskObject< StandardError
+      def message
+        "Pool needs a disk object to save disk"
+      end
+    end
+
+    # NIC Errors
+
     class NicAlreadyRunning < StandardError
       def message
         "NIC is currently running"
@@ -85,7 +123,15 @@ module Rupert
       end
     end
 
-    class VolumeAlreadyExist< StandardError
+    # Disk Classes
+
+    class DiskAllocGreaterThanSize < StandardError
+      def message
+        "You cannot allocate more space than the maximum size"
+      end
+    end
+
+    class DiskAlreadyExist< StandardError
       def message
         "A disk with this name already exists"
       end

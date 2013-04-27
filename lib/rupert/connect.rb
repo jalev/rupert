@@ -29,6 +29,7 @@ module Rupert
       begin
         @connection = Libvirt::open(uri)
         @raw = @connection
+        @type = "KVM"
       rescue Libvirt::ConnectionError => e
         raise Rupert::Errors::ConnectionError.new("Connection failed: #{e.to_s.split("Call to virConnectOpen failed: ")[1]}")
       end
@@ -58,7 +59,10 @@ module Rupert
     # creating Host-specific functions.
     #
     def host
-      Rupert::Host.new
+      case type
+      when "KVM"
+        Rupert::KVM::Host.new
+      end
     end
   end
 end

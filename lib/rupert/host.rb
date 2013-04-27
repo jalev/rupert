@@ -1,9 +1,6 @@
 require 'libvirt'
 
 module Rupert
-  # TODO Host status tools
-  # TODO Host creation
-  # TODO Host - Transient Domain?
 
   class Host < Rupert::Connect
 
@@ -39,10 +36,14 @@ module Rupert
       find_guests_by_name(names)
     end
 
+    def list_interface interface
+      connection.lookup_interface_by_name(interface)
+    end
+
     # Lists all available network interfaces on our host.
     #
     def list_interfaces
-      connection.list_interfaces
+      connection.list_interfaces.sort
     end
 
     # Lists all inactive network interfaces on our host.
@@ -51,11 +52,16 @@ module Rupert
       connection.list_defined_interfaces
     end
 
+    def list_pool name
+      create_pool(:name => pool.is_a?(Libvirt::StoragePool) ? pool.name : pool)
+      rescue Libvirt::RetrieveError
+    end
+
     # Lists all available storage-pools on the host.
     #
     def list_pools
       connection.list_storage_pools.map do | pool |
-        pool({:name => pool})
+        lookup_pool({:name => pool})
       end
     end
 
@@ -75,7 +81,7 @@ module Rupert
     #
     def find_guests_by_id id
       Array(id).map do | guestId |
-        name = connection.lookup_domain_by_id(guestId).name
+        name = @connection.lookup_domain_by_id(guestId).name
         guest({:name => name})
       end
     end
@@ -95,11 +101,11 @@ module Rupert
       end
     end
 
-    def pool options
+    def create_pool options
       Rupert::Pool.new(options)
     end
   
-    def guest options
+    def create_guest options
       Rupert::Guest.new(options)
     end
 

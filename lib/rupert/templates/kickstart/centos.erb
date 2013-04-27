@@ -1,0 +1,77 @@
+install
+<%- if remote %>url --url=http://<%= remote %> <%- end %>
+<%- if iso %>cdrom<%- end%>
+lang en_US.UTF-8
+selinux --permissive
+keyboard us
+skipx
+network --bootproto dhcp --device eth0 --onboot yes --hostname <%= @hostname %>
+rootpw --plaintext nopass
+firewall --ssh
+authconfig --useshadow --enablemd5
+bootloader --location=mbr --append="nofb quiet splash=quiet"
+timezone UTC
+text
+reboot
+clearpart --all --initlabel
+autopart
+
+%packages
+yum
+dhclient
+ntp
+wget
+@Core
+%end
+
+
+%post
+logger "Starting anaconda <%= @hostname %> postinstall"
+exec < /dev/tty3 > /dev/tty3
+#changing to VT 3 so that we can see whats going on....
+/usr/bin/chvt 3
+(
+#update local time
+echo "updating system time"
+/usr/sbin/ntpdate "ntp"
+/usr/sbin/hwclock --systohc
+
+#Install epel for puppet
+su -c 'rpm -Uvh http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm'
+
+# update packages
+yum -t -y -e 0 update
+
+# install puppet
+yum -t -y -e 0 install puppet
+
+su -c 'echo "<%= Facter.ipaddress %> <%= Facter.fqdn %>" >> /etc/hosts'
+
+echo "Configuring puppet"
+cat > /etc/puppet/puppet.conf << EOF
+[main]
+    vardir = /var/lib/puppet
+    rundir = /var/run/puppet
+    ssldir = $vardir/ssl
+[agent]
+    server = <%= Facter.fqdn %> 
+EOF
+
+# Setup puppet to run on system reboot
+/sbin/chkconfig --level 345 puppet on
+
+# Disable most things. Puppet will activate these if required.
+echo "Disabling various system services"
+<% %w{autofs gpm sendmail cups iptables ip6tables auditd arptables_jf xfs
+pcmcia isdn rawdevices hpoj bluetooth openibd avahi-daemon avahi-dnsconfd
+hidd hplip pcscd restorecond mcstrans rhnsd yum-updatesd}.each do |service|
+  -%>
+  /sbin/chkconfig --level 345 <%= service %> off 2>/dev/null
+<% end -%>
+
+  /usr/bin/puppet agent --config /etc/puppet/puppet.conf -o --tags no_such_tag --server <%= Facter.fqdn %>  --no-daemonize
+
+  sync
+
+exit 0
+

@@ -10,19 +10,6 @@ rescue Bundler::BundlerError => e
   exit e.status_code
 end
 require 'rake'
-require 'jeweler'
-Jeweler::Tasks.new do |gem|
-  # gem is a Gem::Specification... see http://docs.rubygems.org/read/chapter/20 for more options
-  gem.name = "rupert"
-  gem.homepage = "http://github.com/qweet/rupert"
-  gem.license = "MIT"
-  gem.summary = %Q{TODO: one-line summary of your gem}
-  gem.description = %Q{TODO: longer description of your gem}
-  gem.email = "i7983164@bournemouth.ac.uk"
-  gem.authors = ["James Bach"]
-  # dependencies defined in Gemfile
-end
-Jeweler::RubygemsDotOrgTasks.new
 
 require 'rake/testtask'
 Rake::TestTask.new(:test) do |test|
@@ -30,6 +17,37 @@ Rake::TestTask.new(:test) do |test|
   test.pattern = 'test/**/test_*.rb'
   test.verbose = true
 end
+
+Rake::TestTask.new(:test_disk) do | test |
+  test.libs << 'lib' << 'test'
+  test.pattern = 'test/**/test_disk.rb'
+  test.verbose = true
+end
+
+Rake::TestTask.new(:test_pool) do | test |
+  test.libs << 'lib' << 'test'
+  test.pattern = 'test/**/test_pool.rb'
+  test.verbose = true
+end
+
+Rake::TestTask.new(:test_guest) do | test |
+  test.libs << 'lib' << 'test'
+  test.pattern = 'test/**/test_guest.rb'
+  test.verbose = true
+end
+
+Rake::TestTask.new(:test_host) do | test |
+  test.libs << 'lib' << 'test'
+  test.pattern = 'test/**/test_host.rb'
+  test.verbose = true
+end
+
+Rake::TestTask.new(:test_connection) do | test |
+  test.libs << 'lib' << 'test'
+  test.pattern = 'test/**/test_connection.rb'
+  test.verbose = true
+end
+
 
 task :default => :test
 

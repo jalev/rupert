@@ -1,5 +1,6 @@
 require 'libvirt'
 require 'rupert/utility' #ensure the utility class is actually loaded 
+require 'rupert/config'
 
 module Rupert
   
@@ -7,11 +8,13 @@ module Rupert
   # of 'Guests'. The actual call to create the guests are handled by the host.
   #
   class Guest
+    include Rupert::Config
+    include Rupert::NetInstall
     include Rupert::Utility
-    include Rupert::Kickstart
 
-    attr_accessor :volume, :ram, :cpu, :iso, :os_type, :cmdargs, :pool, :size, :guest, :name, :domain_type, :arch, :maxram
-    attr_accessor :display_type, :display_port, :remote, :kickstart_file, :root_pass, :kickstart, :os, :remote, :kerneltmp, :initrdtmp, :kickstart_template
+    attr_accessor :disk, :ram, :cpu, :iso, :os_type, :cmdargs, :pool, :size, :guest, :name, :domain_type, :arch, :maxram
+    attr_accessor :display_type, :display_port, :remote, :kickstart_file, :root_pass, :kickstart, :os
+    attr_accessor :remote, :kernel, :initrd, :kickstart_template, :config_file, :config_dir
 
     # The UUID of the Virtual Machine
     attr_reader :uuid
@@ -22,6 +25,8 @@ module Rupert
     attr_reader :template_path
 
     attr_reader :id
+
+    attr_reader :current_ram
 
     #:stopdoc:
     # TODO puppet modules
@@ -78,30 +83,32 @@ module Rupert
     def initialize options={}
       @connection = Rupert.connection
       @name = options[:name] || raise("Missing attribute: Name") unless options[:id] || options[:uuid]
+
       find_guest_by_name 
       # If we have found the guest, then we have no need to set the values,
       # otherwise...
+      #
+      # Required values
       @cpu ||= options[:cpu] || default_vcpu
       @ram ||= options[:ram] || default_ram
-      @os = options[:os]  
       @os_type ||= options[:os_type] || default_os_type
+      @os = options[:os]
       @hostname ||= options[:hostname] 
-      @kickstart = options[:kickstart] 
       @domain_type ||= options[:domain_type] || default_domain_type
       @arch ||= options[:arch] || default_arch
-      @cmdargs = options[:cmdargs]
       @pool = options[:pool] || default_pool
       @display_type ||= options[:display_type] || default_display_type
       @display_port ||= options[:display_port] || default_display_port
+
+      # Optional Values
+      #
+      @cmdargs = options[:cmdargs]
       @iso = options[:iso]
+      @kickstart = options[:kickstart] 
       @remote = options[:remote]
       @template_path = options[:template_path] || default_template_path
       @root_pass = options[:root_pass]
       
-      if options[:remote]
-        @kerneltmp = temp_kernel(@remote)
-        @initrdtmp = temp_initrd(@remote)
-      end
       # We want to be able to pass seperate volume commands at object
       # instanciation. 
       #
@@ -114,7 +121,7 @@ module Rupert
                 :pool =>  options[:pool], :format => options[:disk_format]}
 
       volops = volops.merge(volname)
-      @volume = Volume.new(volops)
+      @disk = Disk.new(volops)
     end
 
     # Saves the virtual machine. The same method is used to alter the virtual
@@ -122,6 +129,13 @@ module Rupert
     #
     def save
       raise Rupert::Errors::MissingAttribute if @name.nil?
+
+      # If we have a remote url, we need to begin fetching things
+      if @remote
+        @kernel = fetch_kernel
+        @initrd = fetch_initrd
+      end
+
       @guest = @connection.raw.define_domain_xml(xml_template)
       @xml_desc = @guest.xml_desc
       get_guest_info
@@ -200,7 +214,7 @@ module Rupert
       !running?
     end
 
-    def destroy
+    def delete
       return true if new?
       force_shutdown if running?
       @guest.undefine
@@ -227,7 +241,25 @@ module Rupert
       @display_port
     end
 
+    # Because the guest will automatically destroy itself after booting, 
+    # we must make a process that checks whether the install has completed
+    # so that we can boot the machine again.
+    #
+    def wait_for_install_completion(wait_time=0)
+
+    end
+
     private
+
+    def fetch_initrd
+      get_config_file
+      download_file(@remote, "images/pxeboot/initrd.img", "#{@config_dir}/os/#{@os}/initrd.img") 
+    end
+
+    def fetch_kernel
+      get_config_file
+      download_file(@remote, "images/pxeboot/vmlinuz", "#{@config_dir}/os/#{@os}/vmlinux") 
+    end
 
     def get_info_by_id
       begin
@@ -263,7 +295,7 @@ module Rupert
       @uuid = value_from_xml("domain/uuid")
       @cpu = value_from_xml("domain/vcpu")
       @arch = value_from_xml("domain/os/type", "arch")
-      @ram = value_from_xml("domain/currentMemory")
+      @ram = convert_from_kb_to_mb(value_from_xml("domain/currentMemory"))
       @display_type = value_from_xml("domain/devices/graphics", "type")
       @display_port = value_from_xml("domain/devices/graphics", "port")
       @kerneltmp = value_from_xml("domain/os/kernel") if @kerneltmp

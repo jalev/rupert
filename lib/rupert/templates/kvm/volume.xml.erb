@@ -1,0 +1,11 @@
+<volume>
+  <name><%= name %></name>
+  <allocation unit="G"><%= alloc %></allocation>
+  <capacity unit="G"><%= size %></capacity>
+  <target>
+    <label>rupert_image_t</label>
+    <%- if format %>
+     <format type='<%= format %>'/>
+    <%- end %>
+  </target>
+</volume>

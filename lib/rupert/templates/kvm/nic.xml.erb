@@ -1,0 +1,22 @@
+<interface name="<%= name %>" type="<%= conntype %>" >
+  <%- if onboot -%>
+    <start mode="onboot"/>
+  <%- end -%>
+  <protocol family="ipv4">
+    <%- if dhcp -%>
+      <dhcp/>
+    <%- elsif !dhcp && ip -%>
+      <ip address="<%= ip %>" prefix="<%= ipPrefix %>"/>
+      <%- if gateway -%>
+        <route gateway="<%= gateway %>"/>
+      <%- end %>
+    <%- else -%>
+      <dhcp/>
+    <%- end -%>
+  </protocol>
+  <%- if conntype == "bridge" -%>
+    <bridge>
+      <interface type="<%= bridgeIfaceType %>"  name="<%= bridgeIfaceName %>"/>
+    </bridge>
+  <%- end %>
+</interface>

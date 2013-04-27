@@ -221,11 +221,14 @@ module Rupert
         if options[:remote]
           @vm.delete_tmp_file(@vm.initrdtmp)
           @vm.delete_tmp_file(@vm.kerneltmp)
-          @vm.cmdargs = nil
-          @vm.kerneltmp = nil
-          @vm.initrdtmp = nil
-          @vm.kickstart = nil 
-          puts @vm.updated?
+          #@vm.cmdargs = nil
+          #@vm.kerneltmp = nil
+          #@vm.initrdtmp = nil
+          #@vm.kickstart = nil 
+          #@vm.remote = nil
+          #@vm.save
+          #puts @vm
+          #puts @vm.updated?
         end
         system("vncviewer :#{@vm.get_vnc_port}")
 

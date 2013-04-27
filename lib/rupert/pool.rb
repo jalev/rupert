@@ -5,6 +5,11 @@ module Rupert
   class Pool
     include Rupert::Utility
 
+
+    attr_reader :uuid, :size, :alloc, :available, :num_of_disks
+
+    attr_accessor :autostart
+
     # The physical connection to the libvirt daemon
     attr_reader :connection
 
@@ -40,9 +45,10 @@ module Rupert
       # Performs a boolean operation on the variable. If nil/false, we raise
       # an error
       @name = options[:name] || raise("must provide a name!")
+      get_pool
       @path = options[:path]
       @template_path = options[:template_path] || default_template_path
-      get_pool
+      @autostart = options[:autostart]
     end
 
     # Create a storage pool 
@@ -56,27 +62,37 @@ module Rupert
     end
 
     def start
-      pool.start
+      @pool.start
     end
 
     def build
-      pool.build
+      @pool.build
     end
 
     def destroy
-      pool.destroy
+      @pool.destroy
     end
 
     def undefine
-      pool.undefine
+      @pool.undefine
     end
 
-    def create_volume volume_object
+    def list_disks
+      @pool.list_disks
+    end
+
+    def new?
+      @pool.nil?
+    end
+
+    def create_disk disk_object
       #this needs to be prettier
-      pool.create_vol_xml(volume_object.xml_template)
+      raise Rupert::Errors::PoolNeedsSave if new?
+      raise Rupert::Errors::NotDiskObject if !disk_object.is_a?(Rupert::Disk)
+      @pool.create_vol_xml(disk_object.xml_template)
     end
 
-    def find_volume_by_name name
+    def find_disk_by_name name
       begin
         @pool.lookup_volume_by_name(name)
       rescue Libvirt::RetrieveError
@@ -103,6 +119,21 @@ module Rupert
         @xml_desc = @pool.xml_desc
       rescue Libvirt::RetrieveError
       end
+    end
+
+    def get_pool_info
+      return if new?
+      return unless @pool = find_pool
+      # These are the only values returned by pool information
+      #
+      @name = @pool.name
+      @autostart = @pool.autostart?
+      @uuid = @pool.uuid
+      @state = @pool.info.state
+      @size = @pool.info.capacity
+      @alloc = @pool.info.allocation
+      @available = @pool.info.available
+      @num_of_disk = @pool.num_of_volumes
     end
 
     def default_template_path
