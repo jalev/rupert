@@ -58,7 +58,6 @@ module Rupert::KVM
     #
     def initialize options={}
       super(options)
-      @volume = Volume.new(volops)
     end
 
     def default_template_path

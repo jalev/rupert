@@ -11,6 +11,8 @@ require 'rupert/pool'
 require 'rupert/nic'
 
 module Rupert
+  
+  autoload :KVM, "rupert/kvm"
 
   class << self
 

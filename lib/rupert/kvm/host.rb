@@ -11,4 +11,6 @@ module Rupert::KVM
       Rupert::KVM::Guest.new options
     end
 
+  end
+
 end

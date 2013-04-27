@@ -36,14 +36,28 @@ module Rupert
       find_guests_by_name(names)
     end
 
-    def list_interface interface
-      connection.lookup_interface_by_name(interface)
+    def list_number_of_active_guests
+      connection.num_of_domains
+    end
+
+    def list_number_of_inactive_guests
+      connection.num_of_defined_domains
+    end
+
+    def find_guest guest
+      create_guest(:name => guest.is_a?(Libvirt::Domain) ? guest.name : guest)
+      rescue Libvirt::RetrieveError
+    end
+
+    def find_interface interface
+      create_nic(:name => interface.is_a?(Libvirt::Interface) ? interface.name : interface)
+      rescue Libvirt::RetrieveError
     end
 
     # Lists all available network interfaces on our host.
     #
     def list_interfaces
-      connection.list_interfaces.sort
+      connection.list_interfaces
     end
 
     # Lists all inactive network interfaces on our host.
@@ -52,7 +66,7 @@ module Rupert
       connection.list_defined_interfaces
     end
 
-    def list_pool name
+    def find_pool pool
       create_pool(:name => pool.is_a?(Libvirt::StoragePool) ? pool.name : pool)
       rescue Libvirt::RetrieveError
     end
@@ -65,6 +79,14 @@ module Rupert
       end
     end
 
+    def list_number_of_pools
+      connection.num_of_storage_pools
+    end
+
+    def list_number_of_inactive_pools
+      connection.num_of_defined_storage_pools
+    end
+
     # Lists all inactive storage-pools on the host.
     #
     def list_inactive_pools
@@ -75,30 +97,16 @@ module Rupert
       connection.list_networks
     end
 
-    private
-
-    # Will return Guest objects which can be formatted for later use.
-    #
-    def find_guests_by_id id
-      Array(id).map do | guestId |
-        name = @connection.lookup_domain_by_id(guestId).name
-        guest({:name => name})
-      end
+    def list_inactive_networks
+      connection.list_defined_networks
     end
 
-    # Will return Guest objects which can be formatted for later use.
-    #
-    def find_guests_by_name name
-      Array(name).map do | guestName |
-        guest({:name => guestName})
-      end
+    def list_number_of_networks
+      connection.num_of_networks
     end
 
-    def lookup_pool name
-      begin
-        create_pool(name)
-      rescue Libvirt::RetrieveError
-      end
+    def list_number_of_inactive_networks
+      connection.num_of_defined_networks
     end
 
     def create_pool options
@@ -107,6 +115,36 @@ module Rupert
   
     def create_guest options
       Rupert::Guest.new(options)
+    end
+
+    def create_nic options
+      Rupert::Nic.new(options)
+    end
+
+    private
+
+    # Will return Guest objects which can be formatted for later use.
+    #
+    def find_guests_by_id id
+      Array(id).map do | guestId |
+        name = @connection.lookup_domain_by_id(guestId).name
+        create_guest({:name => name})
+      end
+    end
+
+    # Will return Guest objects which can be formatted for later use.
+    #
+    def find_guests_by_name name
+      Array(name).map do | guestName |
+        create_guest({:name => guestName})
+      end
+    end
+
+    def lookup_pool name
+      begin
+        create_pool(name)
+      rescue Libvirt::RetrieveError
+      end
     end
 
   end

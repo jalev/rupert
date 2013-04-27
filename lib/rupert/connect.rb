@@ -3,7 +3,7 @@ require 'libvirt'
 module Rupert
   class Connect
     
-    attr_reader :connection, :raw
+    attr_reader :connection, :raw, :type
 
     # During the initialization of the class, we call the Libvirt library to
     # open up a connection to the hypervisor.

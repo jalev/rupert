@@ -22,6 +22,7 @@ module Rupert
     def initialize options = {}
       @connection = Rupert.connection
       @name = options[:name] || raise(Rupert::Errors::AttributeNotExist)
+      get_nic_info
       @conntype = options[:conntype] || default_interface_type
       @mac = options[:mac]
       @dhcp = options[:dhcp]
