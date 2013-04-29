@@ -25,6 +25,8 @@ module Rupert
     # The path of the volume.
     attr_accessor :path
 
+    attr_reader :key
+
     # Path of the template
     attr_reader :template_path
 
@@ -44,12 +46,12 @@ module Rupert
     #
     def initialize options = {}
       @connection = Rupert.connection
-      @name = options[:name] || raise("Volume needs a name")
-      @pool = options[:pool].nil? ? default_pool : @connection.host.lookup_pool(:name => options[:pool]) 
+      @name         = options[:name]
+      @pool         = options[:pool].nil? ? default_pool : @connection.host.lookup_pool(:name => options[:pool]) 
       find_disk
-      @format = options[:format] || default_volume_format
-      @alloc = options[:alloc] || default_alloc_size
-      @size = options[:size] || default_size
+      @format       = options[:format] || default_volume_format
+      @alloc        = options[:alloc] || default_alloc_size
+      @size         = options[:size] || default_size
       @template_path = options[:template_path] || default_template_path
     end
 
@@ -58,6 +60,7 @@ module Rupert
     # a volume is by default a subset of a pool.
     #
     def save
+      raise Rupert::Errors::DiskNeedsName if @name.nil?
       raise Rupert::Errors::DiskAlreadyExist if !new?
       raise Rupert::Errors::DiskAllocGreaterThanSize if @alloc.to_i > @size.to_i
       @disk = pool.create_disk(self)
@@ -96,8 +99,10 @@ module Rupert
       return unless @disk = find_disk
       # These are the only things available that we can pull from libvirt
       #
+      @path = @disk.path
       @size = convert_to_gb(@disk.info.capacity)
       @alloc = convert_to_gb(@disk.info.allocation)
+      @key = @disk.key
     end
 
     # Fetch the first pool.

@@ -89,25 +89,25 @@ module Rupert
       # otherwise...
       #
       # Required values
-      @cpu ||= options[:cpu] || default_vcpu
-      @ram ||= options[:ram] || default_ram
-      @os_type ||= options[:os_type] || default_os_type
-      @os = options[:os]
-      @hostname ||= options[:hostname] 
-      @domain_type ||= options[:domain_type] || default_domain_type
-      @arch ||= options[:arch] || default_arch
-      @pool = options[:pool] || default_pool
+      @cpu          ||= options[:cpu] || default_vcpu
+      @ram          ||= options[:ram] || default_ram
+      @os_type      ||= options[:os_type] || default_os_type
+      @os           =   options[:os]
+      @hostname     ||= options[:hostname] 
+      @domain_type  ||= options[:domain_type] || default_domain_type
+      @arch         ||= options[:arch] || default_arch
+      @pool         =   options[:pool] || default_pool
       @display_type ||= options[:display_type] || default_display_type
       @display_port ||= options[:display_port] || default_display_port
 
       # Optional Values
       #
-      @cmdargs = options[:cmdargs]
-      @iso = options[:iso]
-      @kickstart = options[:kickstart] 
-      @remote = options[:remote]
-      @template_path = options[:template_path] || default_template_path
-      @root_pass = options[:root_pass]
+      @cmdargs      =   options[:cmdargs]
+      @iso          =   options[:iso]
+      @kickstart    =   options[:kickstart] 
+      @remote       =   options[:remote]
+      @template_path =  options[:template_path] || default_template_path
+      @root_pass    =   options[:root_pass]
       
       # We want to be able to pass seperate volume commands at object
       # instanciation. 
@@ -158,6 +158,7 @@ module Rupert
 
     def start
       raise Rupert::Errors::GuestNotCreated if new?
+      raise Rupert::Errors::GuestAlreadyRunning if running?
       @guest.create if !running?
       running?
     end

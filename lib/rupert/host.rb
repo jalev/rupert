@@ -66,6 +66,18 @@ module Rupert
       connection.list_defined_interfaces
     end
 
+    def list_disks options
+      temp = create_pool(:name => options[:pool])
+      temp.list_disks.map do | disk |
+        find_disk(disk)
+      end
+    end
+
+    def find_disk disk
+      create_disk(:name => disk.is_a?(Libvirt::StorageVol) ? disk.name : disk)
+      rescue Libvirt::RetrieveError
+    end
+
     def find_pool pool
       create_pool(:name => pool.is_a?(Libvirt::StoragePool) ? pool.name : pool)
       rescue Libvirt::RetrieveError
@@ -107,6 +119,10 @@ module Rupert
 
     def list_number_of_inactive_networks
       connection.num_of_defined_networks
+    end
+
+    def create_disk options
+      Rupert::Disk.new(options)
     end
 
     def create_pool options

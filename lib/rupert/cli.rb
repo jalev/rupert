@@ -29,6 +29,7 @@ module Rupert
     desc "debug SUBCOMMAND", "debugging"
     subcommand "debug", CLI::Commands::Debug
 
+    desc "list", "list vms"
     def list_vms
 
      # begin

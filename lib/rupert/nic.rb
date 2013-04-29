@@ -21,15 +21,15 @@ module Rupert
 
     def initialize options = {}
       @connection = Rupert.connection
-      @name = options[:name] || raise(Rupert::Errors::AttributeNotExist)
+      @name         = options[:name] || raise(Rupert::Errors::AttributeNotExist)
       get_nic_info
-      @conntype = options[:conntype] || default_interface_type
-      @mac = options[:mac]
-      @dhcp = options[:dhcp]
-      @onboot = options[:onboot] 
-      @mac = options[:mac]
-      @ip = options[:ip] unless dhcp 
-      @ipPrefix = options[:ipPrefix] unless dhcp
+      @conntype     = options[:conntype] || default_interface_type
+      @mac          = options[:mac]
+      @dhcp         = options[:dhcp]
+      @onboot       = options[:onboot] 
+      @mac          = options[:mac]
+      @ip           = options[:ip] unless dhcp 
+      @ipPrefix     = options[:ipPrefix] unless dhcp
       @bridgeIfaceType = options[:bridgeIfaceType]
       @bridgeIfaceName = options[:bridgeIfaceName]
       @template_path = options[:template_path] || default_template_path

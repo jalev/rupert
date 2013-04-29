@@ -36,8 +36,16 @@ module Rupert
     class AlreadyExist < StandardError; end
 
     class ConnectionError < StandardError
+      def message
+        "There was an error with the connection"
+      end
     end
 
+    class NoHostToConnect < StandardError
+      def message
+        "Please provide a connection to libvirt"
+      end
+    end
 
     # Guest Errors
 
@@ -124,6 +132,12 @@ module Rupert
     end
 
     # Disk Classes
+
+    class DiskNeedsName < StandardError
+      def message
+        "Disk needs a name"
+      end
+    end
 
     class DiskAllocGreaterThanSize < StandardError
       def message

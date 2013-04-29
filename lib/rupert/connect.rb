@@ -26,6 +26,7 @@ module Rupert
     # privileges, then Libvirt will force a standard PAM auth to gain access.
     #
     def initialize uri, options = {}
+      raise Rupert::Errors::NoHostToConnect if !uri
       begin
         @connection = Libvirt::open(uri)
         @raw = @connection

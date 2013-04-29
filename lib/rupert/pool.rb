@@ -44,11 +44,11 @@ module Rupert
       @connection = Rupert.connection.raw
       # Performs a boolean operation on the variable. If nil/false, we raise
       # an error
-      @name = options[:name] || raise("must provide a name!")
+      @name           = options[:name] || raise("must provide a name!")
       get_pool
-      @path = options[:path]
-      @template_path = options[:template_path] || default_template_path
-      @autostart = options[:autostart]
+      @path           = options[:path]
+      @autostart      = options[:autostart]
+      @template_path  = options[:template_path] || default_template_path
     end
 
     # Create a storage pool 
@@ -78,7 +78,7 @@ module Rupert
     end
 
     def list_disks
-      @pool.list_disks
+      @pool.list_volumes
     end
 
     def new?
@@ -94,7 +94,7 @@ module Rupert
 
     def find_disk_by_name name
       begin
-        @pool.lookup_volume_by_name(name)
+      @pool.lookup_volume_by_name(name)
       rescue Libvirt::RetrieveError
       end
     end
@@ -109,6 +109,8 @@ module Rupert
     def path
       value_from_xml("pool/target/path") 
     end
+
+    private
 
     # Fetches a pool object by name. This will either return nothing (which
     # means we should create a new pool), or return a Libvirt pool object, and
@@ -126,13 +128,13 @@ module Rupert
       return unless @pool = find_pool
       # These are the only values returned by pool information
       #
-      @name = @pool.name
-      @autostart = @pool.autostart?
-      @uuid = @pool.uuid
-      @state = @pool.info.state
-      @size = @pool.info.capacity
-      @alloc = @pool.info.allocation
-      @available = @pool.info.available
+      @name       = @pool.name
+      @autostart  = @pool.autostart?
+      @uuid       = @pool.uuid
+      @state      = @pool.info.state
+      @size       = @pool.info.capacity
+      @alloc      = @pool.info.allocation
+      @available  = @pool.info.available
       @num_of_disk = @pool.num_of_volumes
     end
 
