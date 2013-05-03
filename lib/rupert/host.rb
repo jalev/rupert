@@ -16,6 +16,10 @@ module Rupert
       connection.hostname
     end
 
+    def uri
+      connection.uri
+    end
+
     # Finds the information about a guest via its ID
     #
     def find_guest_by_id
@@ -25,15 +29,17 @@ module Rupert
     # Lists all defined guests on our host.
     #
     def list_guests
-      ids = connection.list_domains
-      find_guests_by_id(ids)
+      connection.list_domains.map do | guest |
+        find_guests_by_id(guest)
+      end
     end
 
     # Lists all inactive guests on our host.
     #
     def list_inactive_guests
-      names = connection.list_defined_domains
-      find_guests_by_name(names)
+      connection.list_defined_domains.map do | guest |
+        find_guests_by_name(guest)
+      end
     end
 
     def list_number_of_active_guests
@@ -45,25 +51,35 @@ module Rupert
     end
 
     def find_guest guest
-      create_guest(:name => guest.is_a?(Libvirt::Domain) ? guest.name : guest)
+      begin
+        create_guest(:name => guest.is_a?(Libvirt::Domain) ? guest.name : guest)
       rescue Libvirt::RetrieveError
+        raise Rupert::Errors::GuestNotFound
+      end
     end
 
     def find_interface interface
-      create_nic(:name => interface.is_a?(Libvirt::Interface) ? interface.name : interface)
+      begin
+        create_nic(:name => interface.is_a?(Libvirt::Interface) ? interface.name : interface)
       rescue Libvirt::RetrieveError
+        raise Rupert::Errors::NicNotFound
+      end
     end
 
     # Lists all available network interfaces on our host.
     #
     def list_interfaces
-      connection.list_interfaces
+      connection.list_interfaces.map do | nic |
+        find_interface({:name => nic})
+      end
     end
 
     # Lists all inactive network interfaces on our host.
     #
     def list_inactive_interfaces
-      connection.list_defined_interfaces
+      connection.list_defined_interfaces do | nic |
+        find_interface({:name => nic})
+      end
     end
 
     def list_disks options
@@ -74,13 +90,19 @@ module Rupert
     end
 
     def find_disk disk
-      create_disk(:name => disk.is_a?(Libvirt::StorageVol) ? disk.name : disk)
+      begin
+        create_disk(:name => disk.is_a?(Libvirt::StorageVol) ? disk.name : disk)
       rescue Libvirt::RetrieveError
+        raise Rupert::Errors::DiskNotFound
+      end
     end
 
     def find_pool pool
-      create_pool(:name => pool.is_a?(Libvirt::StoragePool) ? pool.name : pool)
+      begin
+        create_pool(:name => pool.is_a?(Libvirt::StoragePool) ? pool.name : pool)
       rescue Libvirt::RetrieveError
+        raise Rupert::Errors::PoolNotFound
+      end
     end
 
     # Lists all available storage-pools on the host.
@@ -102,7 +124,9 @@ module Rupert
     # Lists all inactive storage-pools on the host.
     #
     def list_inactive_pools
-      connection.list_defined_storage_pools
+      connection.list_defined_storage_pools.map do | pool |
+        lookup_pool({:name => pool})
+      end
     end 
 
     def list_networks
@@ -137,6 +161,13 @@ module Rupert
       Rupert::Nic.new(options)
     end
 
+    def lookup_pool name
+      begin
+        create_pool(name)
+      rescue Libvirt::RetrieveError
+      end
+    end
+
     private
 
     # Will return Guest objects which can be formatted for later use.
@@ -156,12 +187,6 @@ module Rupert
       end
     end
 
-    def lookup_pool name
-      begin
-        create_pool(name)
-      rescue Libvirt::RetrieveError
-      end
-    end
 
   end
 

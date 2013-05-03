@@ -1,13 +1,15 @@
 require 'libvirt'
-require 'rupert/utility'
 
 module Rupert::KVM
-  class Nic < Rupert::Nic
+
+  class Pool < Rupert::Pool
+
     include Rupert::Utility
 
     def default_template_path
-      "kvm/nic.xml.erb"
+      "kvm/pool.xml.erb"
     end
 
   end
+
 end

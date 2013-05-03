@@ -17,8 +17,8 @@ module Rupert
   class << self
 
     def connection 
+      raise Rupert::Errors::NoConnectionError if @connection.closed?
       return @connection if !@connection.closed? and @connection
-      raise Rupert::Errors::NoConnectionError
     end
 
     def connect uri 

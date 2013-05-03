@@ -135,39 +135,24 @@ module Rupert
                       :default      =>  :false
       
         def vm 
-      #    begin
+          begin
             conn = options[:connection]
             if !conn
               conn = "qemu:///system"
             end
-            
-            @connection = Rupert::connect(conn)
-            @vm = Rupert::Guest.new(options)
+            connection = Rupert.connect(conn)
+            @vm = connection.host.create_guest(options)
             if options[:kickstart]
               @vm.write_kickstart
             end
             raise Rupert::Errors::GuestAlreadyExist.new if !@vm.new?
-            @vm.volume.save if @vm.volume.new?
+            @vm.disk.save  
             @vm.save
             @vm.start
-            if options[:remote]
-              @vm.delete_tmp_file(@vm.initrdtmp)
-              @vm.delete_tmp_file(@vm.kerneltmp)
-              #@vm.cmdargs = nil
-              #@vm.kerneltmp = nil
-              #@vm.initrdtmp = nil
-              #@vm.kickstart = nil 
-              #@vm.remote = nil
-              #@vm.save
-              #puts @vm
-              #puts @vm.updated?
-            end
             system("vncviewer :#{@vm.get_vnc_port}")
-      
-      
-      #    rescue => e
-      #      puts "#{e.message}"
-      #    end
+          rescue => e
+            puts "#{e.message}"
+          end
         end
       
         desc "disk","Creates a disk"
@@ -215,9 +200,8 @@ module Rupert
               conn = "qemu+ssh://root@localhost/system"
             end
             @connection = Rupert::connect(conn)
-            @volume = Rupert::Volume.new(options)
-            raise Rupert::Errors::DiskAlreadyExist if !@volume.new?
-            @volume.save
+            volume = @connection.create_disk(options)
+            volume.save
           rescue => e
             puts "#{e}"
           end
@@ -231,7 +215,97 @@ module Rupert
                       :type     =>  :string
       
     
+        method_option :name,
+                      :aliases  =>  "-n",
+                      :desc     =>  "The name of the pool", 
+                      :required =>  true,
+                      :type     =>  :string
+
+        method_option :path,
+                      :aliases  =>  "-p",
+                      :desc     =>  "The path to the pool", 
+                      :required =>  true,
+                      :type     =>  :string
         def pool
+          begin
+            conn = options[:connection]
+            if !conn
+              conn = "qemu///system"
+            end
+            connection = Rupert.connect(conn)
+            pool = connection.host.create_pool(options)
+            pool.save
+          rescue => e
+            puts "#{e.message}"
+          end
+        end
+
+        desc "nic","Creates a network interface"
+        method_option :name, 
+                      :aliases  =>  "-n", 
+                      :desc     =>  "The name of the thing you are going to create", 
+                      :required =>  true,
+                      :type     =>  :string
+
+        method_option :connection, 
+                      :aliases  =>  "-c", 
+                      :desc     =>  "The connection to Libvirt", 
+                      :required =>  false,
+                      :type     =>  :string
+
+        method_option :dhcp, 
+                      :desc     =>  "enable DHCP on the device", 
+                      :required =>  false,
+                      :type     =>  :boolean
+
+        method_option :conntype,  
+                      :desc     =>  "The type of connection. Ethernet, Bridge, etc", 
+                      :required =>  false,
+                      :type     =>  :string
+
+        method_option :mac, 
+                      :desc     =>  "The MAC address of the device", 
+                      :required =>  false,
+                      :type     =>  :string
+
+        method_option :ip, 
+                      :desc     =>  "The IP address of the device", 
+                      :required =>  false,
+                      :type     =>  :string
+
+        method_option :onboot, 
+                      :desc     =>  "Set the device to boot on startup", 
+                      :default  =>  true,
+                      :required =>  false,
+                      :type     =>  :boolean
+
+        method_option :ipPrefix, 
+                      :desc     =>  "The IP prefix of the device", 
+                      :required =>  false,
+                      :type     =>  :string
+
+        method_option :bridgeIfaceName, 
+                      :desc     =>  "The name of the bridge interface", 
+                      :required =>  false,
+                      :type     =>  :string
+
+        method_option :bridgeIfaceType, 
+                      :desc     =>  "The device type of the bridge interface", 
+                      :required =>  false,
+                      :type     =>  :string
+
+        def nic
+          begin
+            conn = options[:connection]
+            if !conn
+              conn = "qemu:///system"
+            end
+            connection = Rupert.connect(conn)
+            nic = connection.host.create_nic(options)
+            nic.save
+          rescue => e
+            puts "#{e.message}"
+          end
         end
 
       end

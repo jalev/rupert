@@ -55,30 +55,58 @@ module Rupert
     # we need to define an xml 
     #
     def save 
-      raise("must provide a filestore path") if path.nil?
-      raise("pool with this name already exists") if pool_exist? 
-      connection.define_storage_pool_xml(xml_template)
+      raise Rupert::Errors::PoolPathError if path.nil?
+      raise Rupert::Errors::PoolAlreadyExist if exist? 
+      begin
+        @pool = connection.define_storage_pool_xml(xml_template)
+      rescue Libvirt::Error
+        raise Rupert::Errors::DefinitionError
+      rescue Libvirt::DefinitionError 
+        raise Rupert::Errors::DefinitionError
+      end
       get_pool
     end
 
     def start
-      @pool.start
+      raise Rupert::Errors::PoolAlreadyStarted if active?
+      @pool.create
+      active?
     end
 
     def build
+      raise Rupert::Errors::PoolNotCreated if new?
+      raise Rupert::Errors::PoolAlreadyStarted if active?
       @pool.build
+      build?
     end
 
-    def destroy
+    # This is different from the delete function in that it deletes the
+    # underlying resources under the pool.
+    #
+
+    def delete_pool
+      raise Rupert::Errors::PoolNotCreated if new?
+      @pool.delete
+    end
+
+    def stop
+      raise Rupert::Errors::PoolNotCreated if new?
+      raise Rupert::Errors::PoolAlreadyStopped if !active?
       @pool.destroy
+      !active?
     end
 
-    def undefine
+    def delete
+      raise Rupert::Errors::PoolNotCreated if new?
       @pool.undefine
     end
 
     def list_disks
       @pool.list_volumes
+    end
+
+    def active?
+      @pool.active?
     end
 
     def new?
@@ -87,9 +115,16 @@ module Rupert
 
     def create_disk disk_object
       #this needs to be prettier
-      raise Rupert::Errors::PoolNeedsSave if new?
-      raise Rupert::Errors::NotDiskObject if !disk_object.is_a?(Rupert::Disk)
-      @pool.create_vol_xml(disk_object.xml_template)
+      raise Rupert::Errors::PoolNotCreated if new?
+      raise Rupert::Errors::DiskLargerThanPool if convert_from_gb_to_b(disk_object.size) > @pool.info.available
+
+      begin
+        @pool.create_vol_xml(disk_object.xml_template)
+      # For some reason, the disks use 'Libvirt::Error' instead of
+      # 'Libvirt::DefinitionError'
+      rescue Libvirt::Error
+        raise Rupert::Errors::DefinitionError
+      end
     end
 
     def find_disk_by_name name
@@ -101,7 +136,7 @@ module Rupert
 
     # Returns true if a pool exists, false otherwise.
     #
-    def pool_exist?
+    def exist?
       !get_pool.nil?
     end
 
@@ -110,11 +145,18 @@ module Rupert
       value_from_xml("pool/target/path") 
     end
 
+    # Check to see if the directory we build actually exists. 
+    #
+    def build?
+      File.directory?(path)
+    end
+
     private
 
     # Fetches a pool object by name. This will either return nothing (which
     # means we should create a new pool), or return a Libvirt pool object, and
     # dump its xml contents. 
+    #
     def get_pool
       begin
         @pool = connection.lookup_storage_pool_by_name(name)

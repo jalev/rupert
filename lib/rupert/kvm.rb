@@ -3,5 +3,5 @@ module Rupert::KVM
   autoload :Guest, 'rupert/kvm/guest.rb'
   autoload :Pool, 'rupert/kvm/pool.rb'
   autoload :Nic, 'rupert/kvm/nic.rb'
-  autoload :Volume, 'rupert/kvm/volume.rb'
+  autoload :Disk, 'rupert/kvm/disk.rb'
 end

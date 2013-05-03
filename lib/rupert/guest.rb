@@ -82,7 +82,7 @@ module Rupert
     #
     def initialize options={}
       @connection = Rupert.connection
-      @name = options[:name] || raise("Missing attribute: Name") unless options[:id] || options[:uuid]
+      @name = options[:name] || raise(Rupert::Errors::MissingRequiredAttribute)
 
       find_guest_by_name 
       # If we have found the guest, then we have no need to set the values,
@@ -102,10 +102,10 @@ module Rupert
 
       # Optional Values
       #
-      @cmdargs      =   options[:cmdargs]
-      @iso          =   options[:iso]
-      @kickstart    =   options[:kickstart] 
-      @remote       =   options[:remote]
+      @cmdargs      ||=   options[:cmdargs]
+      @iso          ||=   options[:iso]
+      @kickstart    ||=   options[:kickstart] 
+      @remote       ||=   options[:remote]
       @template_path =  options[:template_path] || default_template_path
       @root_pass    =   options[:root_pass]
       
@@ -128,7 +128,11 @@ module Rupert
     # machine.
     #
     def save
-      raise Rupert::Errors::MissingAttribute if @name.nil?
+      raise Rupert::Errors::MissingRequiredAttribute if @name.nil?
+
+      # Linux needs a whopping total of 4mb of ram to run. 
+      #
+      raise Rupert::Errors::GuestNeedsRam if @ram < 4 
 
       # If we have a remote url, we need to begin fetching things
       if @remote
@@ -136,17 +140,21 @@ module Rupert
         @initrd = fetch_initrd
       end
 
-      @guest = @connection.raw.define_domain_xml(xml_template)
-      @xml_desc = @guest.xml_desc
+      begin
+        @guest = @connection.raw.define_domain_xml(xml_template)
+      rescue Libvirt::DefinitionError 
+        raise Rupert::Errors::DefinitionError
+      end
+
       get_guest_info
+      @xml_desc = @guest.xml_desc
       #return a bool to ensure we can pass any assertions
       !new?
     end
 
-    def tmp_save
-      return @connection.raw.define_domain_xml(xml_template)
-    end
 
+    # Is the guest running?
+    #
     def running?
       return false if new? # We need to return false if guest hasn't been defined
       @guest.active?
@@ -156,26 +164,43 @@ module Rupert
       return @guest.updated?
     end
 
+    # Starts a guest
+    #
     def start
       raise Rupert::Errors::GuestNotCreated if new?
       raise Rupert::Errors::GuestAlreadyRunning if running?
-      @guest.create if !running?
+      @guest.create
+      @on_poweroff = "destroy"
+      @on_restart = "reboot"
+      @on_crash = "reboot"
+      # Post-installation requirement
+      @connection.raw.define_domain_xml(xml_template)
       running?
     end
 
+    # Restarts a guest
+    #
     def restart
+      raise Rupert::Errors::GuestNotCreated if new?
       raise Rupert::Errors::GuestNotStarted if !running? 
       @guest.reboot if running?
       running?
     end
 
+    # Suspends a guest
+    #
     def suspend
+      raise Rupert::Errors::GuestNotCreated if new?
       raise Rupert::Errors::GuestNotStarted if !running?
       @guest.suspend
       !running?
     end
 
+    # Retrieves an array of states, and returns a string value
+    # of the guest state
+    #
     def state
+      raise Rupert::Errors::GuestNotCreated if new?
       case @guest.state[0]
       when 0
         return "No State"
@@ -196,25 +221,37 @@ module Rupert
       end
     end
 
+    # Resumes a guest from suspension.
+    #
     def resume
       raise Rupert::Errors::GuestNotCreated if new?
       raise Rupert::Errors::GuestAlreadyRunning if running?
+      raise Rupert::Errors::GuestNotSuspended if @guest.state == "Paused"
       @guest.resume
       running?
     end
 
+    # Shuts a guest down
+    #
     def shutdown
+      raise Rupert::Errors::GuestNotCreated if new?
       raise Rupert::Errors::GuestNotStarted if !running?
       @guest.shutdown
       !running?
     end
 
+    # Shuts a guest down harder. Equivalent functionality is powering off the
+    # guest by pressing the power-off button.
+    #
     def force_shutdown
+      raise Rupert::Errors::GuestNotCreated if new?
       raise Rupert::Errors::GuestNotStarted if !running?
       @guest.destroy if running?
       !running?
     end
 
+    # Undefines a guest
+    #
     def delete
       return true if new?
       force_shutdown if running?
@@ -228,10 +265,13 @@ module Rupert
       @guest.nil?
     end
 
+    # Dumps the XML template used to provision VMs. Used for debugging.
+    #
     def dump_template_xml
       xml_template
     end
 
+    # Dumps the XML retrieved from libvirt. Used for debugging.
     def dump_xml
       @guest.xml_desc
     end
@@ -247,22 +287,26 @@ module Rupert
     # so that we can boot the machine again.
     #
     def wait_for_install_completion(wait_time=0)
-
+      # TODO
     end
 
     private
 
+    # Fetches the InitRD file for remote installations
     def fetch_initrd
       get_config_file
       download_file(@remote, "images/pxeboot/initrd.img", "#{@config_dir}/os/#{@os}/initrd.img") 
     end
 
+    # Fetches the Kernel file for remote installations
     def fetch_kernel
       get_config_file
       download_file(@remote, "images/pxeboot/vmlinuz", "#{@config_dir}/os/#{@os}/vmlinux") 
     end
 
-    def get_info_by_id
+    # Find guest info by the guest's ID
+    #
+    def find_info_by_id
       begin
         @guest = @connection.raw.lookup_domain_by_id(id)
         get_guest_info
@@ -270,7 +314,9 @@ module Rupert
       end
     end
 
-    def get_info_by_uuid
+    # Find guest info by the guest's ID
+    #
+    def find_info_by_uuid
       begin
         @guest = @connection.raw.lookup_domain_by_id(uuid)
         get_guest_info
@@ -278,6 +324,8 @@ module Rupert
       end
     end
 
+    # Find the guest info by the guest's name
+    #
     def find_guest_by_name
       begin
         @guest = @connection.raw.lookup_domain_by_name(name)
@@ -291,17 +339,20 @@ module Rupert
     #
     def get_guest_info
       return if new? # If the guest doesn't exist, then don't return anything.
-      @xml_desc = @guest.xml_desc
-      @id = @guest.id if running? # The guest will not return an ID unless running
-      @uuid = value_from_xml("domain/uuid")
-      @cpu = value_from_xml("domain/vcpu")
-      @arch = value_from_xml("domain/os/type", "arch")
-      @ram = convert_from_kb_to_mb(value_from_xml("domain/currentMemory"))
-      @display_type = value_from_xml("domain/devices/graphics", "type")
-      @display_port = value_from_xml("domain/devices/graphics", "port")
-      @kerneltmp = value_from_xml("domain/os/kernel") if @kerneltmp
-      @initrdtmp = value_from_xml("domain/os/initrd") if @initrdtmp
-      @cmdargs  = value_from_xml("domain/os/cmdline") if @cmdargs || @kickstart || @remote
+      @xml_desc       = @guest.xml_desc
+      @on_restart     = value_from_xml("domain/on_reboot")
+      @on_poweroff    = value_from_xml("domain/on_poweroff")
+      @on_crash       = value_from_xml("domain/on_crash")
+      @uuid           = value_from_xml("domain/uuid")
+      @cpu            = value_from_xml("domain/vcpu")
+      @arch           = value_from_xml("domain/os/type", "arch")
+      @ram            = convert_from_kb_to_mb(value_from_xml("domain/currentMemory"))
+      @display_type   = value_from_xml("domain/devices/graphics", "type")
+      @display_port   = value_from_xml("domain/devices/graphics", "port")
+      @kerneltmp      = value_from_xml("domain/os/kernel") if @kerneltmp
+      @initrdtmp      = value_from_xml("domain/os/initrd") if @initrdtmp
+      @cmdargs        = value_from_xml("domain/os/cmdline") if @cmdargs || @kickstart || @remote
+      @id             = @guest.id if running? # The guest will not return an ID unless running
     end
 
     def default_pool

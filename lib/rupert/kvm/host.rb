@@ -11,6 +11,18 @@ module Rupert::KVM
       Rupert::KVM::Guest.new options
     end
 
+    def create_pool options
+      Rupert::KVM::Pool.new options
+    end
+
+    def create_disk options
+      Rupert::KVM::Disk.new options
+    end
+
+    def create_nic options
+      Rupert::KVM::Nic.new options
+    end
+
   end
 
 end

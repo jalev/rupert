@@ -1,11 +1,18 @@
 require 'test/unit'
 require 'rupert'
 
-class Rupert::TestDisk < Test::Unit::TestCase
+class Rupert::TestHost < Test::Unit::TestCase
   def setup 
     uri = "qemu+ssh://root@rupert.provisioning.io/system"
     @name = "test-#{Time.now.to_i}"
     @host = Rupert.connect(uri).host
+  end
+
+  def test_should_raise_when_create_with_no_name
+    assert_raise(ArgumentError){
+      @name= ""
+      assert @host.create_guest()
+    }
   end
 
   def test_should_return_nic

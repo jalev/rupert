@@ -28,7 +28,9 @@ module Rupert
     attr_reader :key
 
     # Path of the template
-    attr_reader :template_path
+    attr_accessor :template_path
+
+    attr_accessor :xml_desc
 
     # A volume can be created by passing in some options. A volume must be
     # attached to a Pool before creation.
@@ -47,7 +49,7 @@ module Rupert
     def initialize options = {}
       @connection = Rupert.connection
       @name         = options[:name]
-      @pool         = options[:pool].nil? ? default_pool : @connection.host.lookup_pool(:name => options[:pool]) 
+      @pool         = options[:pool].nil? ? default_pool : @connection.host.find_pool(options[:pool]) 
       find_disk
       @format       = options[:format] || default_volume_format
       @alloc        = options[:alloc] || default_alloc_size
@@ -63,12 +65,15 @@ module Rupert
       raise Rupert::Errors::DiskNeedsName if @name.nil?
       raise Rupert::Errors::DiskAlreadyExist if !new?
       raise Rupert::Errors::DiskAllocGreaterThanSize if @alloc.to_i > @size.to_i
+      raise Rupert::Errors::DiskCannotBeZero if @size == 0
       @disk = pool.create_disk(self)
       get_disk_info
       !new?
     end
 
-    def delete
+    # Deletes a disk 
+    #
+    def delete      
       return true if new?
       @disk.delete
       get_disk_info
@@ -80,8 +85,34 @@ module Rupert
       @disk.nil?
     end
 
+    def dump_xml
+      @disk.xml_desc
+    end
+
+    def dump_template
+      xml_template
+    end
+
+
     def path
       "#{pool.path}/#{name}"
+    end
+
+    def exist?
+      File.exist?(@path)
+    end
+
+    # This is a hack. It is a hack because the current version of the libvirt
+    # Ruby API does not contain bindings using 'virStorageVolResize', which is
+    # a dedicated function for resizing used in Libvirt.. Instead, we call
+    # Virsh, which has implemented it, in a hack for all hacks.
+    #
+
+    def resize(size = @size, shrink = false, pool = @pool.name, name = @name)
+      raise Rupert::Errors::DiskNotCreated if new?
+      raise Rupert::Errors::DiskCannotBeZero if @size == 0
+      raise Rupert::Errors::DiskAllocGreaterThanSize if @alloc >= size
+      system("virsh -q --connect #{@connection.host.uri } vol-resize --pool #{pool} --vol #{name} --capacity #{size}GiB 2>&1 > /dev/null ")
     end
 
     private
@@ -97,6 +128,7 @@ module Rupert
     def get_disk_info
       return if new?
       return unless @disk = find_disk
+      @xml_desc = @disk.xml_desc
       # These are the only things available that we can pull from libvirt
       #
       @path = @disk.path
@@ -125,6 +157,7 @@ module Rupert
     def default_template_path
       "volume.xml.erb"
     end
+
 
   end
 end

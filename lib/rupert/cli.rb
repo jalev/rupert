@@ -29,32 +29,6 @@ module Rupert
     desc "debug SUBCOMMAND", "debugging"
     subcommand "debug", CLI::Commands::Debug
 
-    desc "list", "list vms"
-    def list_vms
-
-     # begin
-        conn = options[:connection]
-        if !conn
-          conn = "qemu+ssh://root@localhost/system"
-        end
-        @connection = Rupert::connect(conn)
-        puts " id\t\tName\t\t\tState"
-        puts "----------------------------------------------------"
-        @connection.host.list_guests.each do | vm |
-          puts " #{vm.id}\t\t#{vm.name}\t\t#{vm.state}"
-        end
-        if options[:all]
-          @connection.host.list_inactive_guests.each do |vm|
-            puts " -\t\t#{vm.name}\t\t#{vm.state}"
-          end
-        end
-        puts "\n"
-     # rescue => e
-     #   puts "#{e.message}"
-     # end
-
-    end
-
     desc "start", "starts a virtual machine"
     method_option :name, 
                   :aliases  =>  "-n", 
@@ -72,14 +46,13 @@ module Rupert
       begin
         conn = options[:connection]
         if !conn
-          conn = "qemu+ssh://root@localhost/system"
+          conn = "qemu///system"
         end
-        @connection = Rupert::connect(conn)
-        @vm = Rupert::Guest.new(:name => options[:name])
-        raise Rupert::Errors::GuestIsRunning
-        @vm.start
+        connection = Rupert::connect(conn)
+        vm = connection.host.find_guest(options[:name])
+        vm.start
       rescue => e
-        puts "#{e.message}"
+        puts "#{e}"
       end
     end
 
@@ -100,12 +73,11 @@ module Rupert
       begin
         conn = options[:connection]
         if !conn
-          conn = "qemu+ssh://root@localhost/system"
+          conn = "qemu///system"
         end
-        @connection = Rupert::connect(conn)
-        @vm = Rupert::Guest.new(:name => options[:name])
-        raise Rupert::Errors::GuestIsNotRunning if !@vm.running?
-        @vm.shutdown
+        connection = Rupert::connect(conn)
+        vm = connection.host.find_guest(options[:name])
+        vm.shutdown
       rescue => e
         puts "#{e.message}"
       end
@@ -128,11 +100,11 @@ module Rupert
       begin
         conn = options[:connection]
         if !conn
-          conn = "qemu+ssh://root@localhost/system"
+          conn = "qemu:///system"
         end
-        @connection = Rupert::connect(conn)
-        @vm = Rupert::Guest.new(:name => options[:name])
-        @vm.restart
+        connection = Rupert::connect(conn)
+        vm = connection.host.find_guest(options[:name])
+        vm.restart
       rescue => e
         puts "#{e.message}"
       end
@@ -155,12 +127,38 @@ module Rupert
       begin
         conn = options[:connection]
         if !conn
-          conn = "qemu+ssh://root@localhost/system"
+          conn = "qemu///system"
         end
-        @connection = Rupert::connect(conn)
-        @vm = Rupert::Guest.new(:name => options[:name])
-        raise Rupert::Errors::GuestIsNotRunning if !@vm.running?
-        @vm.suspend
+        connection = Rupert::connect(conn)
+        vm = connection.host.find_guest(options[:name])
+        vm.suspend
+      rescue => e
+        puts "#{e.message}"
+      end
+    end
+
+    desc "resume", "resume a virtual machine"
+    method_option :name, 
+                  :aliases  =>  "-n", 
+                  :desc     =>  "The name of the thing you are going to create", 
+                  :required =>  true,
+                  :type     =>  :string
+
+    method_option :connection,
+                  :aliases  =>  "-c",
+                  :desc     =>  "The connection to the libvirt host", 
+                  :required =>  false,
+                  :type     =>  :string
+
+    def pause
+      begin
+        conn = options[:connection]
+        if !conn
+          conn = "qemu///system"
+        end
+        connection = Rupert::connect(conn)
+        vm = connection.host.find_guest(options[:name])
+        vm.resume
       rescue => e
         puts "#{e.message}"
       end
@@ -185,15 +183,13 @@ module Rupert
         if !conn
           conn = "qemu+ssh://root@localhost/system"
         end
-        @connection = Rupert::connect(conn)
-        @vm = Rupert::Guest.new(:name => options[:name])
-        raise Rupert::Errors::GuestIsNotRunning if !@vm.running?
-        @vm.force_shutdown
+        connection = Rupert::connect(conn)
+        vm = connection.host.find_guest(options[:name])
+        vm.force_shutdown
       rescue => e
         puts "#{e.message}"
       end
     end
-
 
   end
 

@@ -4,7 +4,7 @@ module Rupert
   module Config
 
     def get_config_file
-      if get_user == "root"
+      if get_user.nil?
         @config_dir = root_config_dir
         @config_file = root_config_file
       else
@@ -24,7 +24,7 @@ module Rupert
     end
 
     def user_config_dir
-      return File.join("#{Dir.home}", ".#{config_dir_name}")
+      return File.join("#{Dir.home}", "#{config_dir_name}")
     end
 
     def root_config_dir 

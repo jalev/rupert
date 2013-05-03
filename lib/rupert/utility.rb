@@ -4,6 +4,8 @@ require 'rexml/document'
 module Rupert
   module Utility
 
+    include REXML
+
     def size_split str
       #splits a string based on a digit delimiter. 
       str.split(/(\d+)/)
@@ -21,6 +23,12 @@ module Rupert
       attribute.nil? ? xml.elements[tree].text : xml.elements[tree].attributes[attribute]
     end
 
+    def values_from_xml tree, attribute=nil
+      xmldoc = Document.new(@xml_desc)
+      arr = []
+      xml = XPath.match(xmldoc, tree).map {|x| x.to_s }.uniq
+    end
+
     def template
       File.read("#{File.dirname __FILE__}/./templates/#{template_path}")
     end
@@ -29,6 +37,10 @@ module Rupert
     #
     def xml_template 
       ERB.new(template, nil, '-').result(binding)
+    end
+
+    def convert_from_gb_to_b gb
+      return gb * 1073741824
     end
 
     def to_kb megabytes

@@ -1,5 +1,8 @@
 <volume>
   <name><%= name %></name>
+  <% if key %>
+    <key><%= key %></key>
+  <% end %>
   <allocation unit="G"><%= alloc %></allocation>
   <capacity unit="G"><%= size %></capacity>
   <target>

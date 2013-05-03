@@ -1,9 +1,11 @@
 require 'libvirt'
+require 'rupert/utility'
 
 module Rupert
   class Connect
+    include Rupert::Utility
     
-    attr_reader :connection, :raw, :type
+    attr_reader :connection, :raw, :type, :xml_desc
 
     # During the initialization of the class, we call the Libvirt library to
     # open up a connection to the hypervisor.
@@ -26,11 +28,11 @@ module Rupert
     # privileges, then Libvirt will force a standard PAM auth to gain access.
     #
     def initialize uri, options = {}
-      raise Rupert::Errors::NoHostToConnect if !uri
+      raise Rupert::Errors::NoHostToConnect if uri.nil?
       begin
         @connection = Libvirt::open(uri)
         @raw = @connection
-        @type = "KVM"
+        @type = capabilities
       rescue Libvirt::ConnectionError => e
         raise Rupert::Errors::ConnectionError.new("Connection failed: #{e.to_s.split("Call to virConnectOpen failed: ")[1]}")
       end
@@ -40,19 +42,29 @@ module Rupert
     # lazy.
     #
     def raw
+      raise Rupert::Errors::NoConnectionError if closed?
       return @raw
+    end
+
+    def capabilities
+      raise Rupert::Errors::NoConnectionError if closed?
+      @xml_desc = connection.capabilities
+      values_from_xml('//capabilities/guest/arch/domain/@type')
     end
 
     # Terminate an active connection.
     #
     def disconnect
+      raise Rupert::Errors::NoConnectionError if closed?
       connection.close
+      closed?
     end
 
     # Return a boolean on the connection state. Returns true if closed, false
     # if open.
     #
     def closed?
+      raise Rupert::Errors::NoConnectionError if @connection.nil?
       connection.closed?
     end
 
@@ -60,9 +72,10 @@ module Rupert
     # creating Host-specific functions.
     #
     def host
-      case type
-      when "KVM"
+      if type.include?("kvm")
         Rupert::KVM::Host.new
+      else
+        raise Rupert::Errors::NoHypervisor
       end
     end
   end

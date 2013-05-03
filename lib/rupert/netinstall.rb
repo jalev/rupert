@@ -51,13 +51,13 @@ module Rupert
 
     def delete_initrd
       f = "#{@config_dir}/os/#{@os}/initrd.img"
-      return if !File.exist?(f)
+      return true if !File.exist?(f)
       File.delete(f)
     end
 
     def delete_kernel
       f = "#{@config_dir}/os/#{@os}/vmlinux"
-      return if !File.exist?(f)
+      return true if !File.exist?(f)
       File.delete(f)
     end
 
